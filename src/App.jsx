@@ -1,10 +1,43 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { initializeApp } from "firebase/app";
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  sendPasswordResetEmail,
+} from "firebase/auth";
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  getDoc,
+} from "firebase/firestore";
 
+// ── FIREBASE CONFIG ───────────────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyBesSvQBRKX8OufnWOranNIJsdx1d6FRTo",
+  authDomain: "sal-de-las-deudas.firebaseapp.com",
+  projectId: "sal-de-las-deudas",
+  storageBucket: "sal-de-las-deudas.firebasestorage.app",
+  messagingSenderId: "677707778904",
+  appId: "1:677707778904:web:d4fe86e049de7b1282f32d",
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const auth = getAuth(firebaseApp);
+const db = getFirestore(firebaseApp);
+const googleProvider = new GoogleAuthProvider();
+
+// ── PALETTE ───────────────────────────────────────────────────────────────────
 const C = {
   bg: "#080A09", surface: "#111413", card: "#161918",
   border: "#222522", borderLight: "#2E322E",
-  gold: "#D4A843", goldLight: "#ECC96A",
-  green: "#2ECC84", red: "#E8504A", blue: "#4AAED4", purple: "#9B72CF",
+  gold: "#D4A843", green: "#2ECC84", red: "#E8504A",
+  blue: "#4AAED4", purple: "#9B72CF",
   muted: "#5A5F58", text: "#ECF0EA", textSoft: "#9BA198",
   snow: "#C8E6FF", avalanche: "#FFD4A8",
 };
@@ -13,7 +46,41 @@ const fmt = (n) =>
   new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n || 0);
 const pct = (a, b) => (b === 0 ? 0 : Math.min(100, Math.round((a / b) * 100)));
 
+const DEFAULT_DATA = {
+  deudas: [],
+  presupuesto: { ingreso: 0, fijos: 0, variables: 0, ahorro: 0 },
+  hormiga: [],
+  metas: [],
+};
+
+async function saveUserData(uid, data) {
+  try {
+    await setDoc(doc(db, "usuarios", uid), data, { merge: true });
+  } catch (e) { console.error("Error guardando:", e); }
+}
+
 // ── SHARED UI ─────────────────────────────────────────────────────────────────
+function Card({ children, style = {}, glow }) {
+  return (
+    <div style={{ background: C.card, border: `1px solid ${glow ? glow + "55" : C.border}`, borderRadius: 18, padding: "20px 22px", boxShadow: glow ? `0 0 24px ${glow}18` : "none", ...style }}>
+      {children}
+    </div>
+  );
+}
+
+function Pill({ color, children }) {
+  return <span style={{ background: color + "22", color, border: `1px solid ${color}44`, borderRadius: 99, padding: "3px 10px", fontSize: 11, fontWeight: 700, letterSpacing: 0.8 }}>{children}</span>;
+}
+
+function Bar({ value, max, color = C.green, height = 8 }) {
+  const p = pct(value, max);
+  return (
+    <div style={{ background: C.border, borderRadius: 99, height, overflow: "hidden" }}>
+      <div style={{ width: `${p}%`, height: "100%", background: color, borderRadius: 99, transition: "width 0.7s ease", boxShadow: `0 0 8px ${color}55` }} />
+    </div>
+  );
+}
+
 function Inp({ label, value, onChange, prefix = "$", type = "number", placeholder = "" }) {
   const displayValue = type === "number" ? (value === 0 ? "" : String(value)) : value;
   const handleChange = (e) => {
@@ -33,8 +100,7 @@ function Inp({ label, value, onChange, prefix = "$", type = "number", placeholde
         <input
           type={type === "number" ? "text" : type}
           inputMode={type === "number" ? "numeric" : undefined}
-          value={displayValue}
-          placeholder={placeholder || (type === "number" ? "0" : "")}
+          value={displayValue} placeholder={placeholder || (type === "number" ? "0" : "")}
           onChange={handleChange}
           style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: C.text, padding: "13px 12px 13px 0", fontSize: 15, fontFamily: "inherit" }}
         />
@@ -58,39 +124,14 @@ function Sel({ label, value, onChange, options }) {
 function Btn({ children, onClick, color = C.gold, textColor = "#080A09", disabled = false, outline = false, style = {} }) {
   return (
     <button onClick={onClick} disabled={disabled} style={{
-      width: "100%", padding: "15px",
+      width: "100%", padding: "14px",
       background: disabled ? C.muted : outline ? "transparent" : color,
       border: outline ? `2px solid ${color}` : "none",
-      borderRadius: 14, color: disabled ? C.bg : outline ? color : textColor,
-      fontWeight: 800, fontSize: 15, cursor: disabled ? "not-allowed" : "pointer",
-      fontFamily: "inherit", boxShadow: disabled || outline ? "none" : `0 4px 20px ${color}44`,
-      transition: "all 0.2s", ...style,
+      borderRadius: 12, color: disabled ? C.bg : outline ? color : textColor,
+      fontWeight: 800, fontSize: 14, cursor: disabled ? "not-allowed" : "pointer",
+      fontFamily: "inherit", boxShadow: disabled || outline ? "none" : `0 4px 16px ${color}44`,
+      transition: "all 0.15s", ...style,
     }}>{children}</button>
-  );
-}
-
-function Card({ children, style = {}, glow }) {
-  return (
-    <div style={{ background: C.card, border: `1px solid ${glow ? glow + "55" : C.border}`, borderRadius: 18, padding: "20px 22px", boxShadow: glow ? `0 0 24px ${glow}18` : "none", ...style }}>
-      {children}
-    </div>
-  );
-}
-
-function Pill({ color, children }) {
-  return (
-    <span style={{ background: color + "22", color, border: `1px solid ${color}44`, borderRadius: 99, padding: "3px 10px", fontSize: 11, fontWeight: 700, letterSpacing: 0.8 }}>
-      {children}
-    </span>
-  );
-}
-
-function Bar({ value, max, color = C.green, height = 8 }) {
-  const p = pct(value, max);
-  return (
-    <div style={{ background: C.border, borderRadius: 99, height, overflow: "hidden" }}>
-      <div style={{ width: `${p}%`, height: "100%", background: color, borderRadius: 99, transition: "width 0.7s ease", boxShadow: `0 0 8px ${color}55` }} />
-    </div>
   );
 }
 
@@ -134,29 +175,21 @@ function SlidesScreen({ onDone }) {
   const [current, setCurrent] = useState(0);
   const slide = SLIDES[current];
   const isLast = current === SLIDES.length - 1;
-
   return (
     <div style={{ minHeight: "100vh", background: C.bg, display: "flex", flexDirection: "column", fontFamily: "'Georgia', serif", position: "relative", overflow: "hidden" }}>
-      <div style={{ position: "absolute", top: -60, left: "50%", transform: "translateX(-50%)", width: 320, height: 320, borderRadius: "50%", background: `radial-gradient(circle, ${slide.color}20 0%, transparent 70%)`, transition: "background 0.5s", pointerEvents: "none" }} />
-
+      <div style={{ position: "absolute", top: -60, left: "50%", transform: "translateX(-50%)", width: 320, height: 320, borderRadius: "50%", background: `radial-gradient(circle, ${slide.color}20 0%, transparent 70%)`, pointerEvents: "none" }} />
       <div style={{ display: "flex", justifyContent: "flex-end", padding: "20px 24px 0" }}>
         {!isLast && <button onClick={onDone} style={{ background: "none", border: "none", color: C.muted, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 600 }}>Saltar →</button>}
       </div>
-
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 32px", textAlign: "center" }}>
-        <div style={{ width: 100, height: 100, background: slide.color + "20", border: `2px solid ${slide.color}44`, borderRadius: 28, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 52, marginBottom: 28, boxShadow: `0 0 40px ${slide.color}25`, transition: "all 0.4s" }}>
-          {slide.emoji}
-        </div>
+        <div style={{ width: 100, height: 100, background: slide.color + "20", border: `2px solid ${slide.color}44`, borderRadius: 28, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 52, marginBottom: 28, boxShadow: `0 0 40px ${slide.color}25` }}>{slide.emoji}</div>
         <div style={{ background: slide.color + "20", color: slide.color, border: `1px solid ${slide.color}44`, borderRadius: 99, padding: "4px 14px", fontSize: 11, fontWeight: 700, letterSpacing: 1.5, marginBottom: 20, textTransform: "uppercase" }}>{slide.tag}</div>
         <h1 style={{ color: C.text, fontSize: 28, fontWeight: 900, margin: "0 0 16px", letterSpacing: -0.5, lineHeight: 1.25, whiteSpace: "pre-line" }}>{slide.title}</h1>
         <p style={{ color: C.textSoft, fontSize: 15, lineHeight: 1.7, margin: 0, maxWidth: 320 }}>{slide.subtitle}</p>
       </div>
-
       <div style={{ padding: "0 28px 48px" }}>
         <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 28 }}>
-          {SLIDES.map((_, i) => (
-            <div key={i} onClick={() => setCurrent(i)} style={{ width: i === current ? 24 : 8, height: 8, borderRadius: 99, background: i === current ? slide.color : C.border, transition: "all 0.3s", cursor: "pointer", boxShadow: i === current ? `0 0 8px ${slide.color}66` : "none" }} />
-          ))}
+          {SLIDES.map((_, i) => <div key={i} onClick={() => setCurrent(i)} style={{ width: i === current ? 24 : 8, height: 8, borderRadius: 99, background: i === current ? slide.color : C.border, transition: "all 0.3s", cursor: "pointer" }} />)}
         </div>
         <Btn onClick={() => isLast ? onDone() : setCurrent(current + 1)} color={slide.color}>
           {isLast ? "Empezar ahora →" : "Siguiente →"}
@@ -173,204 +206,90 @@ function LoginScreen({ onAuth }) {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [gLoading, setGLoading] = useState(false);
   const [error, setError] = useState("");
+  const [resetSent, setResetSent] = useState(false);
 
-  const handleGoogle = () => {
-    setLoading(true);
-    setTimeout(() => { onAuth({ name: "Usuario Google", email: "demo@gmail.com", isNew: true }); setLoading(false); }, 1000);
+  const errMsg = (code) => {
+    const map = {
+      "auth/email-already-in-use": "Ese email ya está registrado.",
+      "auth/wrong-password": "Contraseña incorrecta.",
+      "auth/user-not-found": "No encontramos ese email.",
+      "auth/weak-password": "La contraseña debe tener al menos 6 caracteres.",
+      "auth/invalid-email": "El email no es válido.",
+      "auth/popup-closed-by-user": "Cerraste el popup de Google.",
+      "auth/invalid-credential": "Email o contraseña incorrectos.",
+    };
+    return map[code] || "Algo salió mal. Intentá de nuevo.";
   };
 
-  const handleSubmit = () => {
+  const handleGoogle = async () => {
+    setGLoading(true); setError("");
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      onAuth(result.user);
+    } catch (e) { if (e.code !== "auth/cancelled-popup-request") setError(errMsg(e.code)); }
+    finally { setGLoading(false); }
+  };
+
+  const handleSubmit = async () => {
     if (!email || !password) { setError("Completá todos los campos."); return; }
-    if (mode === "register" && !name) { setError("Ingresá tu nombre."); return; }
-    setError("");
-    setLoading(true);
-    setTimeout(() => { onAuth({ name: name || email.split("@")[0], email, isNew: mode === "register" }); setLoading(false); }, 900);
+    setLoading(true); setError("");
+    try {
+      if (mode === "register") {
+        const result = await createUserWithEmailAndPassword(auth, email, password);
+        onAuth(result.user);
+      } else {
+        const result = await signInWithEmailAndPassword(auth, email, password);
+        onAuth(result.user);
+      }
+    } catch (e) { setError(errMsg(e.code)); }
+    finally { setLoading(false); }
+  };
+
+  const handleReset = async () => {
+    if (!email) { setError("Ingresá tu email primero."); return; }
+    try { await sendPasswordResetEmail(auth, email); setResetSent(true); setError(""); }
+    catch (e) { setError(errMsg(e.code)); }
   };
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "'Georgia', serif", padding: "24px 20px", position: "relative", overflow: "hidden" }}>
       <div style={{ position: "absolute", top: -100, left: "50%", transform: "translateX(-50%)", width: 400, height: 400, borderRadius: "50%", background: `radial-gradient(circle, ${C.gold}15 0%, transparent 70%)`, pointerEvents: "none" }} />
-
       <div style={{ textAlign: "center", marginBottom: 28 }}>
         <div style={{ width: 60, height: 60, background: C.gold + "22", border: `1px solid ${C.gold}55`, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, margin: "0 auto 14px", boxShadow: `0 0 28px ${C.gold}22` }}>🌿</div>
         <h1 style={{ color: C.text, fontSize: 22, fontWeight: 900, margin: "0 0 4px" }}>Sal de las Deudas</h1>
-        <p style={{ color: C.muted, fontSize: 13, margin: 0 }}>Creá tu cuenta gratis para empezar</p>
+        <p style={{ color: C.muted, fontSize: 13, margin: 0 }}>Acceso exclusivo para compradores del pack</p>
       </div>
-
       <div style={{ width: "100%", maxWidth: 400, background: C.card, border: `1px solid ${C.border}`, borderRadius: 22, padding: "26px 24px", boxShadow: "0 24px 64px #00000066" }}>
         <div style={{ display: "flex", background: C.surface, borderRadius: 12, padding: 4, marginBottom: 24 }}>
           {[{ id: "register", label: "Crear cuenta" }, { id: "login", label: "Ya tengo cuenta" }].map((t) => (
             <button key={t.id} onClick={() => { setMode(t.id); setError(""); }} style={{ flex: 1, padding: "10px", border: "none", borderRadius: 10, background: mode === t.id ? C.gold : "transparent", color: mode === t.id ? C.bg : C.muted, fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s" }}>{t.label}</button>
           ))}
         </div>
-
         {error && <div style={{ background: C.red + "18", border: `1px solid ${C.red}44`, borderRadius: 10, padding: "10px 14px", marginBottom: 16, color: C.red, fontSize: 13 }}>⚠ {error}</div>}
-
-        <button onClick={handleGoogle} disabled={loading} style={{ width: "100%", padding: "14px", background: loading ? C.surface : "#fff", border: `1px solid ${C.borderLight}`, borderRadius: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, fontFamily: "inherit", fontWeight: 700, fontSize: 14, color: loading ? C.muted : "#1a1a1a", marginBottom: 20 }}>
-          {loading ? "Conectando..." : <><GoogleIcon />Continuar con Google</>}
+        {resetSent && <div style={{ background: C.green + "18", border: `1px solid ${C.green}44`, borderRadius: 10, padding: "10px 14px", marginBottom: 16, color: C.green, fontSize: 13 }}>✓ Te enviamos un email para restablecer tu contraseña.</div>}
+        <button onClick={handleGoogle} disabled={gLoading} style={{ width: "100%", padding: "14px", background: gLoading ? C.surface : "#fff", border: `1px solid ${C.borderLight}`, borderRadius: 12, cursor: gLoading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, fontFamily: "inherit", fontWeight: 700, fontSize: 14, color: gLoading ? C.muted : "#1a1a1a", marginBottom: 20 }}>
+          {gLoading ? "Conectando..." : <><GoogleIcon />Continuar con Google</>}
         </button>
-
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
           <div style={{ flex: 1, height: 1, background: C.border }} />
           <span style={{ color: C.muted, fontSize: 12 }}>o con email</span>
           <div style={{ flex: 1, height: 1, background: C.border }} />
         </div>
-
         {mode === "register" && <Inp label="Tu nombre" value={name} onChange={setName} prefix="" type="text" placeholder="¿Cómo te llamás?" />}
         <Inp label="Email" value={email} onChange={setEmail} prefix="" type="email" placeholder="tu@email.com" />
         <Inp label="Contraseña" value={password} onChange={setPassword} prefix="" type="password" placeholder="••••••••" />
-
         {mode === "login" && (
           <div style={{ textAlign: "right", marginTop: -8, marginBottom: 18 }}>
-            <span style={{ color: C.gold, fontSize: 12, cursor: "pointer", fontWeight: 600 }}>¿Olvidaste tu contraseña?</span>
+            <span onClick={handleReset} style={{ color: C.gold, fontSize: 12, cursor: "pointer", fontWeight: 600 }}>¿Olvidaste tu contraseña?</span>
           </div>
         )}
-
         <Btn onClick={handleSubmit} disabled={loading}>
-          {loading ? "Un momento..." : mode === "register" ? "Crear mi cuenta →" : "Ingresar →"}
+          {loading ? "Verificando..." : mode === "register" ? "Crear mi cuenta →" : "Ingresar →"}
         </Btn>
       </div>
       <p style={{ color: C.muted, fontSize: 11, marginTop: 18, textAlign: "center" }}>Tu información está protegida y es privada. 🔒</p>
-    </div>
-  );
-}
-
-// ── WIZARD ────────────────────────────────────────────────────────────────────
-const METAS_OPCIONES = [
-  { icon: "🛡️", label: "Fondo de emergencia" },
-  { icon: "💳", label: "Salir de deudas" },
-  { icon: "🏖️", label: "Vacaciones" },
-  { icon: "🚗", label: "Comprar un auto" },
-  { icon: "🏠", label: "Ahorrar para mudanza" },
-  { icon: "📚", label: "Capacitarme" },
-];
-
-const WIZARD_STEPS = [
-  { id: "deuda", emoji: "💳", color: C.red, title: "¿Tenés deudas activas?", subtitle: "Empezamos por lo más urgente. No importa cuánto debés, lo importante es tener el número claro.", type: "deuda" },
-  { id: "ingreso", emoji: "💰", color: C.green, title: "¿Cuánto ganás por mes?", subtitle: "Tu ingreso neto (lo que te queda después de impuestos). Esto nos permite armar tu presupuesto 50/30/20.", type: "ingreso" },
-  { id: "meta", emoji: "🎯", color: C.blue, title: "¿Cuál es tu meta principal?", subtitle: "Elegí la que más te importa ahora. Después podés agregar más.", type: "meta" },
-];
-
-function WizardScreen({ user, onDone }) {
-  const [step, setStep] = useState(0);
-  const [data, setData] = useState({ deudaNombre: "", deudaSaldo: 0, deudaTNA: 85, tieneDeuda: null, ingreso: 0, meta: "", metaIcono: "" });
-  const current = WIZARD_STEPS[step];
-  const isLast = step === WIZARD_STEPS.length - 1;
-
-  const canContinue = () => {
-    if (current.type === "deuda") return data.tieneDeuda !== null;
-    if (current.type === "ingreso") return data.ingreso > 0;
-    if (current.type === "meta") return data.meta !== "";
-    return true;
-  };
-
-  const handleNext = () => {
-    if (!canContinue()) return;
-    if (isLast) {
-      onDone({
-        deudas: data.tieneDeuda && data.deudaSaldo > 0 ? [{ nombre: data.deudaNombre || "Mi deuda", saldo: data.deudaSaldo, tna: data.deudaTNA, minimo: Math.round(data.deudaSaldo * 0.03) }] : [],
-        presupuesto: { ingreso: data.ingreso, fijos: 0, variables: 0, ahorro: 0 },
-        hormiga: [],
-        metas: data.meta ? [{ nombre: data.meta, icono: data.metaIcono, objetivo: 0, actual: 0 }] : [],
-      });
-    } else setStep(step + 1);
-  };
-
-  return (
-    <div style={{ minHeight: "100vh", background: C.bg, display: "flex", flexDirection: "column", fontFamily: "'Georgia', serif" }}>
-      <div style={{ padding: "24px 24px 0" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 28 }}>
-          <div style={{ width: 36, height: 36, background: C.gold + "22", border: `1px solid ${C.gold}44`, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🌿</div>
-          <div>
-            <div style={{ color: C.gold, fontSize: 10, fontWeight: 700, letterSpacing: 2 }}>CONFIGURACIÓN INICIAL</div>
-            <div style={{ color: C.textSoft, fontSize: 13 }}>Hola, {user?.name?.split(" ")[0] || "bienvenido/a"} 👋</div>
-          </div>
-        </div>
-        <div style={{ display: "flex", gap: 6, marginBottom: 32 }}>
-          {WIZARD_STEPS.map((_, i) => <div key={i} style={{ flex: 1, height: 5, borderRadius: 99, background: i <= step ? current.color : C.border, transition: "background 0.4s", boxShadow: i === step ? `0 0 8px ${current.color}66` : "none" }} />)}
-        </div>
-      </div>
-
-      <div style={{ flex: 1, padding: "0 24px" }}>
-        <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <div style={{ width: 80, height: 80, background: current.color + "22", border: `2px solid ${current.color}44`, borderRadius: 22, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 40, margin: "0 auto 20px", boxShadow: `0 0 32px ${current.color}22` }}>{current.emoji}</div>
-          <h2 style={{ color: C.text, fontSize: 22, fontWeight: 900, margin: "0 0 10px" }}>{current.title}</h2>
-          <p style={{ color: C.textSoft, fontSize: 14, margin: 0, lineHeight: 1.6 }}>{current.subtitle}</p>
-        </div>
-
-        {current.type === "deuda" && (
-          <div>
-            <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
-              {[{ val: true, label: "Sí, tengo deudas", icon: "💳" }, { val: false, label: "No tengo deudas", icon: "✅" }].map((o) => (
-                <div key={String(o.val)} onClick={() => setData({ ...data, tieneDeuda: o.val })} style={{ flex: 1, padding: "18px 14px", background: data.tieneDeuda === o.val ? current.color + "18" : C.card, border: `2px solid ${data.tieneDeuda === o.val ? current.color : C.border}`, borderRadius: 14, cursor: "pointer", textAlign: "center", transition: "all 0.2s" }}>
-                  <div style={{ fontSize: 28, marginBottom: 8 }}>{o.icon}</div>
-                  <div style={{ color: data.tieneDeuda === o.val ? current.color : C.textSoft, fontWeight: 700, fontSize: 13 }}>{o.label}</div>
-                </div>
-              ))}
-            </div>
-            {data.tieneDeuda === true && (
-              <Card>
-                <div style={{ color: C.muted, fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 16 }}>CARGÁ TU PRIMERA DEUDA</div>
-                <Inp label="¿Qué deuda es?" value={data.deudaNombre} onChange={(v) => setData({ ...data, deudaNombre: v })} prefix="" type="text" placeholder="Ej: Tarjeta Visa" />
-                <Inp label="¿Cuánto debés? ($)" value={data.deudaSaldo} onChange={(v) => setData({ ...data, deudaSaldo: v })} placeholder="Ej: 500000" />
-                <Inp label="Tasa anual TNA (%)" value={data.deudaTNA} onChange={(v) => setData({ ...data, deudaTNA: v })} prefix="%" placeholder="Ej: 85" />
-                {data.deudaSaldo > 0 && (
-                  <div style={{ background: C.red + "0D", border: `1px solid ${C.red}22`, borderRadius: 10, padding: "12px 14px", marginTop: 4 }}>
-                    <div style={{ color: C.muted, fontSize: 11 }}>Pago mínimo estimado (~3%)</div>
-                    <div style={{ color: C.red, fontWeight: 800, fontSize: 18, marginTop: 4 }}>{fmt(Math.round(data.deudaSaldo * 0.03))}/mes</div>
-                  </div>
-                )}
-              </Card>
-            )}
-            {data.tieneDeuda === false && (
-              <div style={{ background: C.green + "0D", border: `1px solid ${C.green}33`, borderRadius: 14, padding: "20px", textAlign: "center" }}>
-                <div style={{ fontSize: 36, marginBottom: 10 }}>🎉</div>
-                <div style={{ color: C.green, fontWeight: 700, fontSize: 15, marginBottom: 6 }}>¡Excelente posición!</div>
-                <div style={{ color: C.textSoft, fontSize: 13, lineHeight: 1.6 }}>Sin deudas podés enfocarte 100% en ahorrar e invertir.</div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {current.type === "ingreso" && (
-          <div>
-            <Inp label="Ingreso mensual neto ($)" value={data.ingreso} onChange={(v) => setData({ ...data, ingreso: v })} placeholder="Ej: 900000" />
-            {data.ingreso > 0 && (
-              <Card style={{ marginTop: 4 }}>
-                <div style={{ color: C.muted, fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 14 }}>TU PRESUPUESTO 50/30/20</div>
-                {[{ label: "🏠 Gastos fijos (50%)", value: data.ingreso * 0.5, color: C.blue }, { label: "🛍️ Variables (30%)", value: data.ingreso * 0.3, color: C.gold }, { label: "📈 Ahorro (20%)", value: data.ingreso * 0.2, color: C.green }].map((r) => (
-                  <div key={r.label} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: `1px solid ${C.border}` }}>
-                    <span style={{ color: C.textSoft, fontSize: 13 }}>{r.label}</span>
-                    <span style={{ color: r.color, fontWeight: 800, fontSize: 14 }}>{fmt(r.value)}</span>
-                  </div>
-                ))}
-              </Card>
-            )}
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "14px 16px", marginTop: 14 }}>
-              <div style={{ color: C.muted, fontSize: 12, lineHeight: 1.6 }}>💡 <span style={{ color: C.textSoft }}>Si tu ingreso varía, poné el promedio de los últimos 3 meses. Siempre podés actualizarlo.</span></div>
-            </div>
-          </div>
-        )}
-
-        {current.type === "meta" && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            {METAS_OPCIONES.map((m) => (
-              <div key={m.label} onClick={() => setData({ ...data, meta: m.label, metaIcono: m.icon })} style={{ padding: "18px 14px", background: data.meta === m.label ? C.blue + "18" : C.card, border: `2px solid ${data.meta === m.label ? C.blue : C.border}`, borderRadius: 14, cursor: "pointer", textAlign: "center", transition: "all 0.2s", boxShadow: data.meta === m.label ? `0 0 16px ${C.blue}22` : "none" }}>
-                <div style={{ fontSize: 30, marginBottom: 8 }}>{m.icon}</div>
-                <div style={{ color: data.meta === m.label ? C.blue : C.textSoft, fontWeight: 700, fontSize: 12, lineHeight: 1.4 }}>{m.label}</div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div style={{ padding: "24px 24px 40px" }}>
-        <Btn onClick={handleNext} color={canContinue() ? current.color : C.muted} disabled={!canContinue()}>
-          {isLast ? "🚀 Ver mi dashboard" : "Continuar →"}
-        </Btn>
-        {step > 0 && <button onClick={() => setStep(step - 1)} style={{ width: "100%", background: "none", border: "none", color: C.muted, cursor: "pointer", fontFamily: "inherit", fontSize: 14, marginTop: 14, padding: "8px" }}>← Volver</button>}
-      </div>
     </div>
   );
 }
@@ -398,7 +317,7 @@ function QuizModal({ onClose, onResult }) {
           <button onClick={onClose} style={{ background: "none", border: "none", color: C.muted, cursor: "pointer", fontSize: 20 }}>×</button>
         </div>
         <div style={{ display: "flex", gap: 6, marginBottom: 24 }}>
-          {QUIZ_Q.map((_, i) => <div key={i} style={{ flex: 1, height: 4, borderRadius: 99, background: i <= step ? C.gold : C.border, transition: "background 0.3s" }} />)}
+          {QUIZ_Q.map((_, i) => <div key={i} style={{ flex: 1, height: 4, borderRadius: 99, background: i <= step ? C.gold : C.border }} />)}
         </div>
         <div style={{ color: C.text, fontSize: 17, fontWeight: 700, lineHeight: 1.5, marginBottom: 24 }}>{QUIZ_Q[step].q}</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -460,6 +379,130 @@ function MetodoCards({ selected, onSelect }) {
   );
 }
 
+// ── WIZARD ────────────────────────────────────────────────────────────────────
+const METAS_OPCIONES = [
+  { icon: "🛡️", label: "Fondo de emergencia" }, { icon: "💳", label: "Salir de deudas" },
+  { icon: "🏖️", label: "Vacaciones" }, { icon: "🚗", label: "Comprar un auto" },
+  { icon: "🏠", label: "Ahorrar para mudanza" }, { icon: "📚", label: "Capacitarme" },
+];
+
+const WIZARD_STEPS = [
+  { id: "deuda", emoji: "💳", color: C.red, title: "¿Tenés deudas activas?", subtitle: "Empezamos por lo más urgente. No importa cuánto debés, lo importante es tener el número claro.", type: "deuda" },
+  { id: "ingreso", emoji: "💰", color: C.green, title: "¿Cuánto ganás por mes?", subtitle: "Tu ingreso neto (lo que te queda después de impuestos). Esto nos permite armar tu presupuesto 50/30/20.", type: "ingreso" },
+  { id: "meta", emoji: "🎯", color: C.blue, title: "¿Cuál es tu meta principal?", subtitle: "Elegí la que más te importa ahora. Después podés agregar más.", type: "meta" },
+];
+
+function WizardScreen({ user, onDone }) {
+  const [step, setStep] = useState(0);
+  const [data, setData] = useState({ deudaNombre: "", deudaSaldo: 0, deudaTNA: 85, tieneDeuda: null, ingreso: 0, meta: "", metaIcono: "" });
+  const current = WIZARD_STEPS[step];
+  const isLast = step === WIZARD_STEPS.length - 1;
+  const canContinue = () => {
+    if (current.type === "deuda") return data.tieneDeuda !== null;
+    if (current.type === "ingreso") return data.ingreso > 0;
+    if (current.type === "meta") return data.meta !== "";
+    return true;
+  };
+  const handleNext = () => {
+    if (!canContinue()) return;
+    if (isLast) {
+      onDone({
+        deudas: data.tieneDeuda && data.deudaSaldo > 0 ? [{ nombre: data.deudaNombre || "Mi deuda", saldo: data.deudaSaldo, tna: data.deudaTNA, minimo: Math.round(data.deudaSaldo * 0.03) }] : [],
+        presupuesto: { ingreso: data.ingreso, fijos: 0, variables: 0, ahorro: 0 },
+        hormiga: [],
+        metas: data.meta ? [{ nombre: data.meta, icono: data.metaIcono, objetivo: 0, actual: 0 }] : [],
+      });
+    } else setStep(step + 1);
+  };
+  return (
+    <div style={{ minHeight: "100vh", background: C.bg, display: "flex", flexDirection: "column", fontFamily: "'Georgia', serif" }}>
+      <div style={{ padding: "24px 24px 0" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 28 }}>
+          <div style={{ width: 36, height: 36, background: C.gold + "22", border: `1px solid ${C.gold}44`, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🌿</div>
+          <div>
+            <div style={{ color: C.gold, fontSize: 10, fontWeight: 700, letterSpacing: 2 }}>CONFIGURACIÓN INICIAL</div>
+            <div style={{ color: C.textSoft, fontSize: 13 }}>Hola, {user?.displayName?.split(" ")[0] || "bienvenido/a"} 👋</div>
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 6, marginBottom: 32 }}>
+          {WIZARD_STEPS.map((_, i) => <div key={i} style={{ flex: 1, height: 5, borderRadius: 99, background: i <= step ? current.color : C.border, transition: "background 0.4s" }} />)}
+        </div>
+      </div>
+      <div style={{ flex: 1, padding: "0 24px" }}>
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <div style={{ width: 80, height: 80, background: current.color + "22", border: `2px solid ${current.color}44`, borderRadius: 22, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 40, margin: "0 auto 20px" }}>{current.emoji}</div>
+          <h2 style={{ color: C.text, fontSize: 22, fontWeight: 900, margin: "0 0 10px" }}>{current.title}</h2>
+          <p style={{ color: C.textSoft, fontSize: 14, margin: 0, lineHeight: 1.6 }}>{current.subtitle}</p>
+        </div>
+        {current.type === "deuda" && (
+          <div>
+            <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
+              {[{ val: true, label: "Sí, tengo deudas", icon: "💳" }, { val: false, label: "No tengo deudas", icon: "✅" }].map((o) => (
+                <div key={String(o.val)} onClick={() => setData({ ...data, tieneDeuda: o.val })} style={{ flex: 1, padding: "18px 14px", background: data.tieneDeuda === o.val ? current.color + "18" : C.card, border: `2px solid ${data.tieneDeuda === o.val ? current.color : C.border}`, borderRadius: 14, cursor: "pointer", textAlign: "center", transition: "all 0.2s" }}>
+                  <div style={{ fontSize: 28, marginBottom: 8 }}>{o.icon}</div>
+                  <div style={{ color: data.tieneDeuda === o.val ? current.color : C.textSoft, fontWeight: 700, fontSize: 13 }}>{o.label}</div>
+                </div>
+              ))}
+            </div>
+            {data.tieneDeuda === true && (
+              <Card>
+                <Inp label="¿Qué deuda es?" value={data.deudaNombre} onChange={(v) => setData({ ...data, deudaNombre: v })} prefix="" type="text" placeholder="Ej: Tarjeta Visa" />
+                <Inp label="¿Cuánto debés? ($)" value={data.deudaSaldo} onChange={(v) => setData({ ...data, deudaSaldo: v })} placeholder="Ej: 500000" />
+                <Inp label="Tasa anual TNA (%)" value={data.deudaTNA} onChange={(v) => setData({ ...data, deudaTNA: v })} prefix="%" placeholder="Ej: 85" />
+                {data.deudaSaldo > 0 && (
+                  <div style={{ background: C.red + "0D", border: `1px solid ${C.red}22`, borderRadius: 10, padding: "12px 14px" }}>
+                    <div style={{ color: C.muted, fontSize: 11 }}>Pago mínimo estimado (~3%)</div>
+                    <div style={{ color: C.red, fontWeight: 800, fontSize: 18, marginTop: 4 }}>{fmt(Math.round(data.deudaSaldo * 0.03))}/mes</div>
+                  </div>
+                )}
+              </Card>
+            )}
+            {data.tieneDeuda === false && (
+              <div style={{ background: C.green + "0D", border: `1px solid ${C.green}33`, borderRadius: 14, padding: "20px", textAlign: "center" }}>
+                <div style={{ fontSize: 36, marginBottom: 10 }}>🎉</div>
+                <div style={{ color: C.green, fontWeight: 700, fontSize: 15, marginBottom: 6 }}>¡Excelente posición!</div>
+                <div style={{ color: C.textSoft, fontSize: 13, lineHeight: 1.6 }}>Sin deudas podés enfocarte 100% en ahorrar e invertir.</div>
+              </div>
+            )}
+          </div>
+        )}
+        {current.type === "ingreso" && (
+          <div>
+            <Inp label="Ingreso mensual neto ($)" value={data.ingreso} onChange={(v) => setData({ ...data, ingreso: v })} placeholder="Ej: 900000" />
+            {data.ingreso > 0 && (
+              <Card style={{ marginTop: 4 }}>
+                <div style={{ color: C.muted, fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 14 }}>TU PRESUPUESTO 50/30/20</div>
+                {[{ label: "🏠 Gastos fijos (50%)", value: data.ingreso * 0.5, color: C.blue }, { label: "🛍️ Variables (30%)", value: data.ingreso * 0.3, color: C.gold }, { label: "📈 Ahorro (20%)", value: data.ingreso * 0.2, color: C.green }].map((r) => (
+                  <div key={r.label} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: `1px solid ${C.border}` }}>
+                    <span style={{ color: C.textSoft, fontSize: 13 }}>{r.label}</span>
+                    <span style={{ color: r.color, fontWeight: 800, fontSize: 14 }}>{fmt(r.value)}</span>
+                  </div>
+                ))}
+              </Card>
+            )}
+          </div>
+        )}
+        {current.type === "meta" && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            {METAS_OPCIONES.map((m) => (
+              <div key={m.label} onClick={() => setData({ ...data, meta: m.label, metaIcono: m.icon })} style={{ padding: "18px 14px", background: data.meta === m.label ? C.blue + "18" : C.card, border: `2px solid ${data.meta === m.label ? C.blue : C.border}`, borderRadius: 14, cursor: "pointer", textAlign: "center", transition: "all 0.2s" }}>
+                <div style={{ fontSize: 30, marginBottom: 8 }}>{m.icon}</div>
+                <div style={{ color: data.meta === m.label ? C.blue : C.textSoft, fontWeight: 700, fontSize: 12, lineHeight: 1.4 }}>{m.label}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      <div style={{ padding: "24px 24px 40px" }}>
+        <Btn onClick={handleNext} color={canContinue() ? current.color : C.muted} disabled={!canContinue()}>
+          {isLast ? "🚀 Ver mi dashboard" : "Continuar →"}
+        </Btn>
+        {step > 0 && <button onClick={() => setStep(step - 1)} style={{ width: "100%", background: "none", border: "none", color: C.muted, cursor: "pointer", fontFamily: "inherit", fontSize: 14, marginTop: 14, padding: "8px" }}>← Volver</button>}
+      </div>
+    </div>
+  );
+}
+
 // ── TABS ──────────────────────────────────────────────────────────────────────
 const TABS = [
   { id: "dashboard", label: "Inicio", icon: "◈" },
@@ -469,15 +512,13 @@ const TABS = [
   { id: "metas", label: "Metas", icon: "🎯" },
 ];
 
-// ── DASHBOARD TAB ─────────────────────────────────────────────────────────────
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
 function DashboardTab({ user, data, onSignOut }) {
   const totalDeuda = data.deudas.reduce((s, d) => s + d.saldo, 0);
   const totalHormiga = data.hormiga.reduce((s, h) => s + h.anual, 0);
   const metasPct = data.metas.length > 0 ? Math.round(data.metas.reduce((s, m) => s + pct(m.actual, m.objetivo), 0) / data.metas.length) : 0;
-
   return (
     <div>
-      {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -486,12 +527,11 @@ function DashboardTab({ user, data, onSignOut }) {
           </div>
           <button onClick={onSignOut} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, color: C.muted, padding: "7px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, flexShrink: 0 }}>Salir</button>
         </div>
-        <h1 style={{ color: C.text, fontSize: 26, fontWeight: 900, margin: "0 0 4px", letterSpacing: -0.5 }}>
-          Hola, {user?.name?.split(" ")[0]} 👋
+        <h1 style={{ color: C.text, fontSize: 26, fontWeight: 900, margin: "0 0 4px" }}>
+          Hola, {user?.displayName?.split(" ")[0] || "bienvenido/a"} 👋
         </h1>
-        <p style={{ color: C.muted, fontSize: 13, margin: 0 }}>Tu panorama financiero</p>
+        <p style={{ color: C.muted, fontSize: 12, margin: 0 }}>Tu panorama financiero</p>
       </div>
-
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
         {[
           { label: "DEUDA TOTAL", value: totalDeuda > 0 ? fmt(totalDeuda) : "Sin deudas ✓", color: totalDeuda > 0 ? C.red : C.green, icon: "💳", sub: `${data.deudas.length} deudas` },
@@ -509,7 +549,6 @@ function DashboardTab({ user, data, onSignOut }) {
           </Card>
         ))}
       </div>
-
       {totalHormiga > 500000 && (
         <div style={{ background: C.gold + "12", border: `1px solid ${C.gold}44`, borderRadius: 16, padding: "16px 18px", marginBottom: 20 }}>
           <div style={{ display: "flex", gap: 12 }}>
@@ -521,7 +560,6 @@ function DashboardTab({ user, data, onSignOut }) {
           </div>
         </div>
       )}
-
       {data.presupuesto.ingreso > 0 && (
         <Card style={{ marginBottom: 20 }}>
           <div style={{ color: C.muted, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 16 }}>DISTRIBUCIÓN DEL INGRESO</div>
@@ -536,7 +574,6 @@ function DashboardTab({ user, data, onSignOut }) {
           ))}
         </Card>
       )}
-
       {data.deudas.length > 0 && (
         <Card>
           <div style={{ color: C.muted, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 16 }}>DEUDAS ACTIVAS</div>
@@ -555,7 +592,7 @@ function DashboardTab({ user, data, onSignOut }) {
   );
 }
 
-// ── DEUDAS TAB ────────────────────────────────────────────────────────────────
+// ── DEUDAS ────────────────────────────────────────────────────────────────────
 function DeudasTab({ data, onChange }) {
   const { deudas } = data;
   const [form, setForm] = useState({ nombre: "", saldo: 0, tna: 0, minimo: 0 });
@@ -571,7 +608,6 @@ function DeudasTab({ data, onChange }) {
   const ordenadas = [...deudas].sort((a, b) => metodo === "nieve" ? a.saldo - b.saldo : b.tna - a.tna);
   const totalDeuda = deudas.reduce((s, d) => s + d.saldo, 0);
   const totalMinimos = deudas.reduce((s, d) => s + d.minimo, 0);
-
   return (
     <div>
       {showQuiz && <QuizModal onClose={() => setShowQuiz(false)} onResult={(r) => { setMetodo(r); setShowQuiz(false); }} />}
@@ -594,11 +630,10 @@ function DeudasTab({ data, onChange }) {
         <Inp label="Pago mínimo mensual ($)" value={form.minimo} onChange={(v) => setForm({ ...form, minimo: v })} placeholder="Ej: 15000" />
         <Btn onClick={addDeuda}>+ Agregar deuda</Btn>
       </Card>
-
       {deudas.length > 0 && (
         <>
           <Card style={{ marginBottom: 20 }}>
-            <Inp label="Dinero EXTRA mensual para atacar deudas ($)" value={extra} onChange={setExtra} placeholder="Ej: 30000" />
+            <Inp label="Dinero EXTRA mensual ($)" value={extra} onChange={setExtra} placeholder="Ej: 30000" />
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
               {[{ label: "TOTAL", value: fmt(totalDeuda), color: C.red }, { label: "MÍNIMOS", value: fmt(totalMinimos), color: C.gold }, { label: "EXTRA", value: fmt(extra), color: C.green }].map((s) => (
                 <div key={s.label} style={{ textAlign: "center", padding: "12px 8px", background: C.surface, borderRadius: 10 }}>
@@ -616,7 +651,7 @@ function DeudasTab({ data, onChange }) {
               return (
                 <div key={i} style={{ padding: "14px 0", borderBottom: i < ordenadas.length - 1 ? `1px solid ${C.border}` : "none" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0, background: i === 0 ? C.gold : C.surface, display: "flex", alignItems: "center", justifyContent: "center", color: i === 0 ? C.bg : C.muted, fontWeight: 900, fontSize: 13, boxShadow: i === 0 ? `0 0 10px ${C.gold}55` : "none" }}>{i + 1}°</div>
+                    <div style={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0, background: i === 0 ? C.gold : C.surface, display: "flex", alignItems: "center", justifyContent: "center", color: i === 0 ? C.bg : C.muted, fontWeight: 900, fontSize: 13 }}>{i + 1}°</div>
                     <div style={{ flex: 1 }}>
                       <div style={{ display: "flex", justifyContent: "space-between" }}>
                         <span style={{ color: C.text, fontWeight: 700 }}>{d.nombre}</span>
@@ -624,11 +659,9 @@ function DeudasTab({ data, onChange }) {
                       </div>
                       <div style={{ color: C.muted, fontSize: 12, marginTop: 4 }}>{fmt(d.saldo)} · TNA {d.tna}%</div>
                       {i === 0 && extra > 0 && (
-                        <div style={{ marginTop: 8 }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
-                            <span style={{ color: C.gold, fontSize: 12 }}>Pagando {fmt(pagoTotal)}/mes</span>
-                            <span style={{ color: C.gold, fontSize: 12, fontWeight: 700 }}>~{meses} meses</span>
-                          </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
+                          <span style={{ color: C.gold, fontSize: 12 }}>Pagando {fmt(pagoTotal)}/mes</span>
+                          <span style={{ color: C.gold, fontSize: 12, fontWeight: 700 }}>~{meses} meses</span>
                         </div>
                       )}
                     </div>
@@ -645,7 +678,7 @@ function DeudasTab({ data, onChange }) {
   );
 }
 
-// ── PRESUPUESTO TAB ───────────────────────────────────────────────────────────
+// ── PRESUPUESTO ───────────────────────────────────────────────────────────────
 function PresupuestoTab({ data, onChange }) {
   const { presupuesto } = data;
   const up = (key, val) => onChange({ ...data, presupuesto: { ...presupuesto, [key]: val } });
@@ -662,7 +695,7 @@ function PresupuestoTab({ data, onChange }) {
         <div style={{ color: C.gold, fontSize: 10, fontWeight: 700, letterSpacing: 2.5, marginBottom: 6 }}>MÓDULO 2</div>
         <h2 style={{ color: C.text, fontSize: 22, fontWeight: 900, margin: "0 0 6px" }}>Presupuesto 50/30/20</h2>
       </div>
-      <InfoBanner icon="📖" title="¿Qué es la regla 50/30/20?" color={C.green} text="Dividís tu ingreso: 50% para necesidades (alquiler, comida, servicios), 30% para gustos (salidas, streaming, ropa) y 20% para tu futuro (ahorro e inversión). En Argentina es una guía flexible, no una camisa de fuerza." />
+      <InfoBanner icon="📖" title="¿Qué es la regla 50/30/20?" color={C.green} text="Dividís tu ingreso: 50% necesidades, 30% gustos y 20% ahorro e inversión. En Argentina es una guía flexible, no una camisa de fuerza." />
       <Card style={{ marginBottom: 20 }}>
         <Inp label="Ingreso mensual neto ($)" value={ingreso} onChange={(v) => up("ingreso", v)} placeholder="Ej: 900000" />
         {ingreso > 0 && (
@@ -715,7 +748,7 @@ function PresupuestoTab({ data, onChange }) {
   );
 }
 
-// ── HORMIGA TAB ───────────────────────────────────────────────────────────────
+// ── HORMIGA ───────────────────────────────────────────────────────────────────
 function HormigaTab({ data, onChange }) {
   const { hormiga } = data;
   const [form, setForm] = useState({ nombre: "", monto: 0, frecuencia: "semanal" });
@@ -729,14 +762,13 @@ function HormigaTab({ data, onChange }) {
   };
   const totalAnual = hormiga.reduce((s, h) => s + h.anual, 0);
   const ejemplos = [{ nombre: "☕ Café en cadena", monto: 5500, frecuencia: "semanal" }, { nombre: "🛵 Delivery", monto: 25000, frecuencia: "semanal" }, { nombre: "🚗 Uber corto", monto: 4500, frecuencia: "semanal" }, { nombre: "📱 App premium", monto: 5500, frecuencia: "mensual" }, { nombre: "🍔 Snack kiosco", monto: 2500, frecuencia: "diario" }];
-
   return (
     <div>
       <div style={{ marginBottom: 24 }}>
         <div style={{ color: C.gold, fontSize: 10, fontWeight: 700, letterSpacing: 2.5, marginBottom: 6 }}>MÓDULO 3</div>
         <h2 style={{ color: C.text, fontSize: 22, fontWeight: 900, margin: "0 0 6px" }}>Gastos Hormiga</h2>
       </div>
-      <InfoBanner icon="🐜" title="¿Qué son los gastos hormiga?" color={C.gold} text="Son consumos pequeños y frecuentes: el cafecito, el delivery del viernes, el Uber de 10 cuadras, esa app que sigue cobrando. Un café de $5.500 tres veces por semana son $858.000 al año. El problema no es el gasto aislado: es la repetición silenciosa." />
+      <InfoBanner icon="🐜" title="¿Qué son los gastos hormiga?" color={C.gold} text="Son consumos pequeños y frecuentes: el cafecito, el delivery, el Uber de 10 cuadras. Un café de $5.500 tres veces por semana son $858.000 al año." />
       {totalAnual > 0 && (
         <div style={{ background: C.gold + "12", border: `1px solid ${C.gold}44`, borderRadius: 18, padding: "22px", marginBottom: 20, textAlign: "center" }}>
           <div style={{ color: C.muted, fontSize: 10, fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>ESTÁS PERDIENDO AL AÑO</div>
@@ -785,7 +817,7 @@ function HormigaTab({ data, onChange }) {
   );
 }
 
-// ── METAS TAB ─────────────────────────────────────────────────────────────────
+// ── METAS ─────────────────────────────────────────────────────────────────────
 function MetasTab({ data, onChange }) {
   const { metas } = data;
   const [form, setForm] = useState({ nombre: "", objetivo: 0, actual: 0, icono: "🎯" });
@@ -846,38 +878,78 @@ function MetasTab({ data, onChange }) {
 }
 
 // ── MAIN APP ──────────────────────────────────────────────────────────────────
-const DEFAULT_DATA = { deudas: [], presupuesto: { ingreso: 0, fijos: 0, variables: 0, ahorro: 0 }, hormiga: [], metas: [] };
-
 export default function App() {
-  const [screen, setScreen] = useState("slides");
   const [user, setUser] = useState(null);
-  const [appData, setAppData] = useState(DEFAULT_DATA);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [data, setData] = useState(DEFAULT_DATA);
   const [tab, setTab] = useState("dashboard");
+  const [saving, setSaving] = useState(false);
+  const [isNew, setIsNew] = useState(false);
 
-  const handleAuth = (userData) => {
-    setUser(userData);
-    setScreen(userData.isNew ? "wizard" : "app");
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (u) => {
+      setUser(u);
+      if (u) {
+        try {
+          const snap = await getDoc(doc(db, "usuarios", u.uid));
+          if (snap.exists()) {
+            setData({ ...DEFAULT_DATA, ...snap.data() });
+            setIsNew(false);
+          } else {
+            setIsNew(true);
+          }
+        } catch (e) { console.error(e); setIsNew(true); }
+      }
+      setAuthLoading(false);
+    });
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    if (!user || isNew) return;
+    setSaving(true);
+    const timer = setTimeout(async () => {
+      await saveUserData(user.uid, data);
+      setSaving(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [data, user]);
+
+  const handleSignOut = () => { signOut(auth); setData(DEFAULT_DATA); setIsNew(false); };
+
+  const handleWizardDone = async (wizardData) => {
+    setData(wizardData);
+    setIsNew(false);
+    await saveUserData(user.uid, wizardData);
   };
 
-  const handleWizardDone = (data) => {
-    setAppData(data);
-    setScreen("app");
-  };
+  if (authLoading) {
+    return (
+      <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16, fontFamily: "'Georgia', serif" }}>
+        <div style={{ width: 56, height: 56, background: C.gold + "22", border: `1px solid ${C.gold}44`, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>🌿</div>
+        <div style={{ color: C.muted, fontSize: 14 }}>Cargando...</div>
+      </div>
+    );
+  }
 
-  if (screen === "slides") return <SlidesScreen onDone={() => setScreen("login")} />;
-  if (screen === "login") return <LoginScreen onAuth={handleAuth} />;
-  if (screen === "wizard") return <WizardScreen user={user} onDone={handleWizardDone} />;
+  if (!user) return <SlidesScreen onDone={() => {}} />;
+  if (!user && authLoading === false) return <LoginScreen onAuth={setUser} />;
+  if (isNew) return <WizardScreen user={user} onDone={handleWizardDone} />;
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, fontFamily: "'Georgia', serif", color: C.text, maxWidth: 480, margin: "0 auto" }}>
+      {saving && (
+        <div style={{ position: "fixed", top: 12, right: 16, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 99, padding: "6px 14px", fontSize: 11, color: C.muted, zIndex: 50 }}>
+          Guardando...
+        </div>
+      )}
       <div style={{ padding: "28px 22px 96px" }}>
-        {tab === "dashboard" && <DashboardTab user={user} data={appData} onSignOut={() => { setUser(null); setScreen("slides"); }} />}
-        {tab === "deudas" && <DeudasTab data={appData} onChange={setAppData} />}
-        {tab === "presupuesto" && <PresupuestoTab data={appData} onChange={setAppData} />}
-        {tab === "hormiga" && <HormigaTab data={appData} onChange={setAppData} />}
-        {tab === "metas" && <MetasTab data={appData} onChange={setAppData} />}
+        {tab === "dashboard" && <DashboardTab user={user} data={data} onSignOut={handleSignOut} />}
+        {tab === "deudas" && <DeudasTab data={data} onChange={setData} />}
+        {tab === "presupuesto" && <PresupuestoTab data={data} onChange={setData} />}
+        {tab === "hormiga" && <HormigaTab data={data} onChange={setData} />}
+        {tab === "metas" && <MetasTab data={data} onChange={setData} />}
       </div>
-
       <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, background: C.surface, borderTop: `1px solid ${C.border}`, display: "flex", padding: "10px 0 18px" }}>
         {TABS.map((t) => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "4px 0" }}>
