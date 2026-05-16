@@ -17,7 +17,6 @@ import {
   getDoc,
 } from "firebase/firestore";
 
-// ── FIREBASE CONFIG ───────────────────────────────────────────────────────────
 const firebaseConfig = {
   apiKey: "AIzaSyBesSvQBRKX8OufnWOranNIJsdx1d6FRTo",
   authDomain: "sal-de-las-deudas.firebaseapp.com",
@@ -32,7 +31,6 @@ const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp);
 const googleProvider = new GoogleAuthProvider();
 
-// ── PALETTE ───────────────────────────────────────────────────────────────────
 const C = {
   bg: "#080A09", surface: "#111413", card: "#161918",
   border: "#222522", borderLight: "#2E322E",
@@ -59,7 +57,6 @@ async function saveUserData(uid, data) {
   } catch (e) { console.error("Error guardando:", e); }
 }
 
-// ── SHARED UI ─────────────────────────────────────────────────────────────────
 function Card({ children, style = {}, glow }) {
   return (
     <div style={{ background: C.card, border: `1px solid ${glow ? glow + "55" : C.border}`, borderRadius: 18, padding: "20px 22px", boxShadow: glow ? `0 0 24px ${glow}18` : "none", ...style }}>
@@ -76,7 +73,7 @@ function Bar({ value, max, color = C.green, height = 8 }) {
   const p = pct(value, max);
   return (
     <div style={{ background: C.border, borderRadius: 99, height, overflow: "hidden" }}>
-      <div style={{ width: `${p}%`, height: "100%", background: color, borderRadius: 99, transition: "width 0.7s ease", boxShadow: `0 0 8px ${color}55` }} />
+      <div style={{ width: `${p}%`, height: "100%", background: color, borderRadius: 99, transition: "width 0.7s ease" }} />
     </div>
   );
 }
@@ -97,13 +94,8 @@ function Inp({ label, value, onChange, prefix = "$", type = "number", placeholde
       {label && <label style={{ display: "block", color: C.textSoft, fontSize: 11, marginBottom: 6, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase" }}>{label}</label>}
       <div style={{ display: "flex", alignItems: "center", background: C.surface, border: `1px solid ${C.borderLight}`, borderRadius: 12, overflow: "hidden" }}>
         {prefix && <span style={{ padding: "0 12px", color: C.gold, fontWeight: 700, fontSize: 13 }}>{prefix}</span>}
-        <input
-          type={type === "number" ? "text" : type}
-          inputMode={type === "number" ? "numeric" : undefined}
-          value={displayValue} placeholder={placeholder || (type === "number" ? "0" : "")}
-          onChange={handleChange}
-          style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: C.text, padding: "13px 12px 13px 0", fontSize: 15, fontFamily: "inherit" }}
-        />
+        <input type={type === "number" ? "text" : type} inputMode={type === "number" ? "numeric" : undefined} value={displayValue} placeholder={placeholder || (type === "number" ? "0" : "")} onChange={handleChange}
+          style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: C.text, padding: "13px 12px 13px 0", fontSize: 15, fontFamily: "inherit" }} />
       </div>
     </div>
   );
@@ -113,8 +105,7 @@ function Sel({ label, value, onChange, options }) {
   return (
     <div style={{ marginBottom: 14 }}>
       {label && <label style={{ display: "block", color: C.textSoft, fontSize: 11, marginBottom: 6, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase" }}>{label}</label>}
-      <select value={value} onChange={(e) => onChange(e.target.value)}
-        style={{ width: "100%", background: C.surface, border: `1px solid ${C.borderLight}`, borderRadius: 12, color: C.text, padding: "12px 14px", fontSize: 14, fontFamily: "inherit", outline: "none", cursor: "pointer" }}>
+      <select value={value} onChange={(e) => onChange(e.target.value)} style={{ width: "100%", background: C.surface, border: `1px solid ${C.borderLight}`, borderRadius: 12, color: C.text, padding: "12px 14px", fontSize: 14, fontFamily: "inherit", outline: "none", cursor: "pointer" }}>
         {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
     </div>
@@ -123,15 +114,9 @@ function Sel({ label, value, onChange, options }) {
 
 function Btn({ children, onClick, color = C.gold, textColor = "#080A09", disabled = false, outline = false, style = {} }) {
   return (
-    <button onClick={onClick} disabled={disabled} style={{
-      width: "100%", padding: "14px",
-      background: disabled ? C.muted : outline ? "transparent" : color,
-      border: outline ? `2px solid ${color}` : "none",
-      borderRadius: 12, color: disabled ? C.bg : outline ? color : textColor,
-      fontWeight: 800, fontSize: 14, cursor: disabled ? "not-allowed" : "pointer",
-      fontFamily: "inherit", boxShadow: disabled || outline ? "none" : `0 4px 16px ${color}44`,
-      transition: "all 0.15s", ...style,
-    }}>{children}</button>
+    <button onClick={onClick} disabled={disabled} style={{ width: "100%", padding: "15px", background: disabled ? C.muted : outline ? "transparent" : color, border: outline ? `2px solid ${color}` : "none", borderRadius: 14, color: disabled ? C.bg : outline ? color : textColor, fontWeight: 800, fontSize: 15, cursor: disabled ? "not-allowed" : "pointer", fontFamily: "inherit", boxShadow: disabled || outline ? "none" : `0 4px 20px ${color}44`, transition: "all 0.2s", ...style }}>
+      {children}
+    </button>
   );
 }
 
@@ -163,7 +148,6 @@ function GoogleIcon() {
   );
 }
 
-// ── SLIDES ────────────────────────────────────────────────────────────────────
 const SLIDES = [
   { emoji: "🌿", color: C.gold, title: "Bienvenido/a a\nSal de las Deudas", subtitle: "La app que te ayuda a liberarte de las deudas y ordenar tu plata — adaptada a la Argentina de hoy.", tag: "Argentina 2026" },
   { emoji: "💳", color: C.red, title: "Atacá tus deudas\ncon método", subtitle: "Bola de Nieve o Avalancha. Dos métodos probados para salir de las deudas. La app te dice exactamente cuál usar y cuánto tiempo te lleva.", tag: "Sin improvisación" },
@@ -199,7 +183,6 @@ function SlidesScreen({ onDone }) {
   );
 }
 
-// ── LOGIN ─────────────────────────────────────────────────────────────────────
 function LoginScreen({ onAuth }) {
   const [mode, setMode] = useState("register");
   const [email, setEmail] = useState("");
@@ -208,7 +191,6 @@ function LoginScreen({ onAuth }) {
   const [loading, setLoading] = useState(false);
   const [gLoading, setGLoading] = useState(false);
   const [error, setError] = useState("");
-  const [resetSent, setResetSent] = useState(false);
 
   const errMsg = (code) => {
     const map = {
@@ -217,7 +199,7 @@ function LoginScreen({ onAuth }) {
       "auth/user-not-found": "No encontramos ese email.",
       "auth/weak-password": "La contraseña debe tener al menos 6 caracteres.",
       "auth/invalid-email": "El email no es válido.",
-      "auth/popup-closed-by-user": "Cerraste el popup de Google.",
+      "auth/popup-closed-by-user": "",
       "auth/invalid-credential": "Email o contraseña incorrectos.",
     };
     return map[code] || "Algo salió mal. Intentá de nuevo.";
@@ -228,7 +210,7 @@ function LoginScreen({ onAuth }) {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       onAuth(result.user);
-    } catch (e) { if (e.code !== "auth/cancelled-popup-request") setError(errMsg(e.code)); }
+    } catch (e) { if (e.code !== "auth/popup-closed-by-user") setError(errMsg(e.code)); }
     finally { setGLoading(false); }
   };
 
@@ -236,21 +218,12 @@ function LoginScreen({ onAuth }) {
     if (!email || !password) { setError("Completá todos los campos."); return; }
     setLoading(true); setError("");
     try {
-      if (mode === "register") {
-        const result = await createUserWithEmailAndPassword(auth, email, password);
-        onAuth(result.user);
-      } else {
-        const result = await signInWithEmailAndPassword(auth, email, password);
-        onAuth(result.user);
-      }
+      let result;
+      if (mode === "register") result = await createUserWithEmailAndPassword(auth, email, password);
+      else result = await signInWithEmailAndPassword(auth, email, password);
+      onAuth(result.user);
     } catch (e) { setError(errMsg(e.code)); }
     finally { setLoading(false); }
-  };
-
-  const handleReset = async () => {
-    if (!email) { setError("Ingresá tu email primero."); return; }
-    try { await sendPasswordResetEmail(auth, email); setResetSent(true); setError(""); }
-    catch (e) { setError(errMsg(e.code)); }
   };
 
   return (
@@ -259,7 +232,7 @@ function LoginScreen({ onAuth }) {
       <div style={{ textAlign: "center", marginBottom: 28 }}>
         <div style={{ width: 60, height: 60, background: C.gold + "22", border: `1px solid ${C.gold}55`, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, margin: "0 auto 14px", boxShadow: `0 0 28px ${C.gold}22` }}>🌿</div>
         <h1 style={{ color: C.text, fontSize: 22, fontWeight: 900, margin: "0 0 4px" }}>Sal de las Deudas</h1>
-        <p style={{ color: C.muted, fontSize: 13, margin: 0 }}>Acceso exclusivo para compradores del pack</p>
+        <p style={{ color: C.muted, fontSize: 13, margin: 0 }}>Creá tu cuenta gratis para empezar</p>
       </div>
       <div style={{ width: "100%", maxWidth: 400, background: C.card, border: `1px solid ${C.border}`, borderRadius: 22, padding: "26px 24px", boxShadow: "0 24px 64px #00000066" }}>
         <div style={{ display: "flex", background: C.surface, borderRadius: 12, padding: 4, marginBottom: 24 }}>
@@ -268,8 +241,7 @@ function LoginScreen({ onAuth }) {
           ))}
         </div>
         {error && <div style={{ background: C.red + "18", border: `1px solid ${C.red}44`, borderRadius: 10, padding: "10px 14px", marginBottom: 16, color: C.red, fontSize: 13 }}>⚠ {error}</div>}
-        {resetSent && <div style={{ background: C.green + "18", border: `1px solid ${C.green}44`, borderRadius: 10, padding: "10px 14px", marginBottom: 16, color: C.green, fontSize: 13 }}>✓ Te enviamos un email para restablecer tu contraseña.</div>}
-        <button onClick={handleGoogle} disabled={gLoading} style={{ width: "100%", padding: "14px", background: gLoading ? C.surface : "#fff", border: `1px solid ${C.borderLight}`, borderRadius: 12, cursor: gLoading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, fontFamily: "inherit", fontWeight: 700, fontSize: 14, color: gLoading ? C.muted : "#1a1a1a", marginBottom: 20 }}>
+        <button onClick={handleGoogle} disabled={gLoading} style={{ width: "100%", padding: "14px", background: gLoading ? C.surface : "#fff", border: `1px solid ${C.borderLight}`, borderRadius: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, fontFamily: "inherit", fontWeight: 700, fontSize: 14, color: gLoading ? C.muted : "#1a1a1a", marginBottom: 20 }}>
           {gLoading ? "Conectando..." : <><GoogleIcon />Continuar con Google</>}
         </button>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
@@ -280,116 +252,27 @@ function LoginScreen({ onAuth }) {
         {mode === "register" && <Inp label="Tu nombre" value={name} onChange={setName} prefix="" type="text" placeholder="¿Cómo te llamás?" />}
         <Inp label="Email" value={email} onChange={setEmail} prefix="" type="email" placeholder="tu@email.com" />
         <Inp label="Contraseña" value={password} onChange={setPassword} prefix="" type="password" placeholder="••••••••" />
-        {mode === "login" && (
-          <div style={{ textAlign: "right", marginTop: -8, marginBottom: 18 }}>
-            <span onClick={handleReset} style={{ color: C.gold, fontSize: 12, cursor: "pointer", fontWeight: 600 }}>¿Olvidaste tu contraseña?</span>
-          </div>
-        )}
-        <Btn onClick={handleSubmit} disabled={loading}>
-          {loading ? "Verificando..." : mode === "register" ? "Crear mi cuenta →" : "Ingresar →"}
-        </Btn>
+        {mode === "login" && <div style={{ textAlign: "right", marginTop: -8, marginBottom: 18 }}><span style={{ color: C.gold, fontSize: 12, cursor: "pointer", fontWeight: 600 }} onClick={async () => { if (email) { await sendPasswordResetEmail(auth, email); alert("Te enviamos un email para restablecer tu contraseña."); } else alert("Ingresá tu email primero."); }}>¿Olvidaste tu contraseña?</span></div>}
+        <Btn onClick={handleSubmit} disabled={loading}>{loading ? "Un momento..." : mode === "register" ? "Crear mi cuenta →" : "Ingresar →"}</Btn>
       </div>
       <p style={{ color: C.muted, fontSize: 11, marginTop: 18, textAlign: "center" }}>Tu información está protegida y es privada. 🔒</p>
     </div>
   );
 }
 
-// ── QUIZ ──────────────────────────────────────────────────────────────────────
-const QUIZ_Q = [
-  { q: "¿Cómo te sentís cuando pagás una deuda completa?", opts: [{ label: "🔥 Me re-energiza, necesito esa victoria", val: "nieve" }, { label: "😐 Bien, pero me importa más ahorrar plata", val: "avalancha" }] },
-  { q: "¿Abandonaste algún plan financiero antes?", opts: [{ label: "😔 Sí, me cuesta sostenerlo", val: "nieve" }, { label: "💪 No, soy constante cuando me lo propongo", val: "avalancha" }] },
-  { q: "¿Qué te importa más?", opts: [{ label: "🎉 Sentir que avanzo rápido", val: "nieve" }, { label: "💰 Pagar la menor cantidad de intereses", val: "avalancha" }] },
-];
-
-function QuizModal({ onClose, onResult }) {
-  const [step, setStep] = useState(0);
-  const [answers, setAnswers] = useState([]);
-  const choose = (val) => {
-    const next = [...answers, val];
-    if (step < QUIZ_Q.length - 1) { setAnswers(next); setStep(step + 1); }
-    else { onResult(next.filter(a => a === "nieve").length >= 2 ? "nieve" : "avalancha"); onClose(); }
-  };
-  return (
-    <div style={{ position: "fixed", inset: 0, background: "#000000CC", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-      <div style={{ background: C.card, border: `1px solid ${C.borderLight}`, borderRadius: 20, padding: 28, maxWidth: 400, width: "100%" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}>
-          <div style={{ color: C.gold, fontWeight: 700, fontSize: 12, letterSpacing: 1 }}>PREGUNTA {step + 1} DE {QUIZ_Q.length}</div>
-          <button onClick={onClose} style={{ background: "none", border: "none", color: C.muted, cursor: "pointer", fontSize: 20 }}>×</button>
-        </div>
-        <div style={{ display: "flex", gap: 6, marginBottom: 24 }}>
-          {QUIZ_Q.map((_, i) => <div key={i} style={{ flex: 1, height: 4, borderRadius: 99, background: i <= step ? C.gold : C.border }} />)}
-        </div>
-        <div style={{ color: C.text, fontSize: 17, fontWeight: 700, lineHeight: 1.5, marginBottom: 24 }}>{QUIZ_Q[step].q}</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {QUIZ_Q[step].opts.map((o) => (
-            <button key={o.val} onClick={() => choose(o.val)} style={{ padding: "16px 18px", background: C.surface, border: `1px solid ${C.borderLight}`, borderRadius: 14, color: C.text, textAlign: "left", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 600 }}>{o.label}</button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── MÉTODO CARDS ──────────────────────────────────────────────────────────────
-function MetodoCards({ selected, onSelect }) {
-  const methods = [
-    { id: "nieve", emoji: "❄️", name: "Bola de Nieve", tagline: "El método que motiva", color: C.snow, pasos: "Atacás primero la deuda más CHICA sin importar la tasa. Cada victoria te da impulso para la siguiente.", para: "Necesitás motivación constante o ya tiraste la toalla antes.", pros: ["Victoria rápida en pocos meses", "Reduce el estrés", "Más fácil de sostener"], contra: "Pagás más intereses en total" },
-    { id: "avalancha", emoji: "⛰️", name: "Avalancha", tagline: "El método que ahorra", color: C.avalanche, pasos: "Atacás primero la deuda con la TASA MÁS ALTA sin importar el saldo. Cada peso extra reduce lo más caro.", para: "Sos disciplinado/a y querés pagar la menor cantidad de intereses.", pros: ["Ahorrás más plata", "Matemáticamente óptimo", "Salís antes"], contra: "Tardás más en ver la primera deuda caer" },
-  ];
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 20 }}>
-      {methods.map((m) => {
-        const sel = selected === m.id;
-        return (
-          <div key={m.id} onClick={() => onSelect(m.id)} style={{ background: sel ? m.color + "12" : C.card, border: `2px solid ${sel ? m.color : C.border}`, borderRadius: 16, padding: "18px 20px", cursor: "pointer", transition: "all 0.2s" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 26 }}>{m.emoji}</span>
-                <div>
-                  <div style={{ color: sel ? m.color : C.text, fontWeight: 800, fontSize: 15 }}>{m.name}</div>
-                  <div style={{ color: C.muted, fontSize: 12 }}>{m.tagline}</div>
-                </div>
-              </div>
-              {sel && <Pill color={m.color}>ELEGIDO</Pill>}
-            </div>
-            <div style={{ color: C.textSoft, fontSize: 13, lineHeight: 1.6, paddingLeft: 36 }}>{m.pasos}</div>
-            {sel && (
-              <div style={{ paddingLeft: 36, marginTop: 12 }}>
-                <div style={{ background: m.color + "15", borderRadius: 10, padding: "10px 14px", marginBottom: 10 }}>
-                  <div style={{ color: m.color, fontSize: 11, fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>IDEAL PARA VOS SI...</div>
-                  <div style={{ color: C.textSoft, fontSize: 13 }}>{m.para}</div>
-                </div>
-                {m.pros.map((p, i) => <div key={i} style={{ display: "flex", gap: 8, marginBottom: 4 }}><span style={{ color: C.green, fontSize: 12 }}>✓</span><span style={{ color: C.textSoft, fontSize: 13 }}>{p}</span></div>)}
-                <div style={{ display: "flex", gap: 8, marginTop: 4 }}><span style={{ color: C.red, fontSize: 12 }}>✗</span><span style={{ color: C.textSoft, fontSize: 13 }}>{m.contra}</span></div>
-              </div>
-            )}
-          </div>
-        );
-      })}
-      <div style={{ background: C.purple + "0D", border: `1px dashed ${C.purple}55`, borderRadius: 14, padding: "14px 18px" }}>
-        <div style={{ display: "flex", gap: 10 }}>
-          <span style={{ fontSize: 20 }}>⚡</span>
-          <div>
-            <div style={{ color: C.purple, fontWeight: 700, fontSize: 14 }}>Método Híbrido</div>
-            <div style={{ color: C.textSoft, fontSize: 12, marginTop: 4, lineHeight: 1.6 }}>Si tenés una deuda muy chica, eliminala primero (Bola de Nieve). Después seguí con Avalancha. Lo mejor de los dos mundos.</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── WIZARD ────────────────────────────────────────────────────────────────────
 const METAS_OPCIONES = [
-  { icon: "🛡️", label: "Fondo de emergencia" }, { icon: "💳", label: "Salir de deudas" },
-  { icon: "🏖️", label: "Vacaciones" }, { icon: "🚗", label: "Comprar un auto" },
-  { icon: "🏠", label: "Ahorrar para mudanza" }, { icon: "📚", label: "Capacitarme" },
+  { icon: "🛡️", label: "Fondo de emergencia" },
+  { icon: "💳", label: "Salir de deudas" },
+  { icon: "🏖️", label: "Vacaciones" },
+  { icon: "🚗", label: "Comprar un auto" },
+  { icon: "🏠", label: "Ahorrar para mudanza" },
+  { icon: "📚", label: "Capacitarme" },
 ];
 
 const WIZARD_STEPS = [
-  { id: "deuda", emoji: "💳", color: C.red, title: "¿Tenés deudas activas?", subtitle: "Empezamos por lo más urgente. No importa cuánto debés, lo importante es tener el número claro.", type: "deuda" },
-  { id: "ingreso", emoji: "💰", color: C.green, title: "¿Cuánto ganás por mes?", subtitle: "Tu ingreso neto (lo que te queda después de impuestos). Esto nos permite armar tu presupuesto 50/30/20.", type: "ingreso" },
-  { id: "meta", emoji: "🎯", color: C.blue, title: "¿Cuál es tu meta principal?", subtitle: "Elegí la que más te importa ahora. Después podés agregar más.", type: "meta" },
+  { emoji: "💳", color: C.red, title: "¿Tenés deudas activas?", subtitle: "Empezamos por lo más urgente.", type: "deuda" },
+  { emoji: "💰", color: C.green, title: "¿Cuánto ganás por mes?", subtitle: "Tu ingreso neto mensual para armar el presupuesto 50/30/20.", type: "ingreso" },
+  { emoji: "🎯", color: C.blue, title: "¿Cuál es tu meta principal?", subtitle: "Elegí la que más te importa ahora.", type: "meta" },
 ];
 
 function WizardScreen({ user, onDone }) {
@@ -421,7 +304,7 @@ function WizardScreen({ user, onDone }) {
           <div style={{ width: 36, height: 36, background: C.gold + "22", border: `1px solid ${C.gold}44`, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🌿</div>
           <div>
             <div style={{ color: C.gold, fontSize: 10, fontWeight: 700, letterSpacing: 2 }}>CONFIGURACIÓN INICIAL</div>
-            <div style={{ color: C.textSoft, fontSize: 13 }}>Hola, {user?.displayName?.split(" ")[0] || "bienvenido/a"} 👋</div>
+            <div style={{ color: C.textSoft, fontSize: 13 }}>Hola, {user?.displayName?.split(" ")[0] || user?.email?.split("@")[0] || "bienvenido/a"} 👋</div>
           </div>
         </div>
         <div style={{ display: "flex", gap: 6, marginBottom: 32 }}>
@@ -438,7 +321,7 @@ function WizardScreen({ user, onDone }) {
           <div>
             <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
               {[{ val: true, label: "Sí, tengo deudas", icon: "💳" }, { val: false, label: "No tengo deudas", icon: "✅" }].map((o) => (
-                <div key={String(o.val)} onClick={() => setData({ ...data, tieneDeuda: o.val })} style={{ flex: 1, padding: "18px 14px", background: data.tieneDeuda === o.val ? current.color + "18" : C.card, border: `2px solid ${data.tieneDeuda === o.val ? current.color : C.border}`, borderRadius: 14, cursor: "pointer", textAlign: "center", transition: "all 0.2s" }}>
+                <div key={String(o.val)} onClick={() => setData({ ...data, tieneDeuda: o.val })} style={{ flex: 1, padding: "18px 14px", background: data.tieneDeuda === o.val ? current.color + "18" : C.card, border: `2px solid ${data.tieneDeuda === o.val ? current.color : C.border}`, borderRadius: 14, cursor: "pointer", textAlign: "center" }}>
                   <div style={{ fontSize: 28, marginBottom: 8 }}>{o.icon}</div>
                   <div style={{ color: data.tieneDeuda === o.val ? current.color : C.textSoft, fontWeight: 700, fontSize: 13 }}>{o.label}</div>
                 </div>
@@ -449,19 +332,12 @@ function WizardScreen({ user, onDone }) {
                 <Inp label="¿Qué deuda es?" value={data.deudaNombre} onChange={(v) => setData({ ...data, deudaNombre: v })} prefix="" type="text" placeholder="Ej: Tarjeta Visa" />
                 <Inp label="¿Cuánto debés? ($)" value={data.deudaSaldo} onChange={(v) => setData({ ...data, deudaSaldo: v })} placeholder="Ej: 500000" />
                 <Inp label="Tasa anual TNA (%)" value={data.deudaTNA} onChange={(v) => setData({ ...data, deudaTNA: v })} prefix="%" placeholder="Ej: 85" />
-                {data.deudaSaldo > 0 && (
-                  <div style={{ background: C.red + "0D", border: `1px solid ${C.red}22`, borderRadius: 10, padding: "12px 14px" }}>
-                    <div style={{ color: C.muted, fontSize: 11 }}>Pago mínimo estimado (~3%)</div>
-                    <div style={{ color: C.red, fontWeight: 800, fontSize: 18, marginTop: 4 }}>{fmt(Math.round(data.deudaSaldo * 0.03))}/mes</div>
-                  </div>
-                )}
               </Card>
             )}
             {data.tieneDeuda === false && (
               <div style={{ background: C.green + "0D", border: `1px solid ${C.green}33`, borderRadius: 14, padding: "20px", textAlign: "center" }}>
                 <div style={{ fontSize: 36, marginBottom: 10 }}>🎉</div>
-                <div style={{ color: C.green, fontWeight: 700, fontSize: 15, marginBottom: 6 }}>¡Excelente posición!</div>
-                <div style={{ color: C.textSoft, fontSize: 13, lineHeight: 1.6 }}>Sin deudas podés enfocarte 100% en ahorrar e invertir.</div>
+                <div style={{ color: C.green, fontWeight: 700, fontSize: 15 }}>¡Excelente posición!</div>
               </div>
             )}
           </div>
@@ -470,12 +346,11 @@ function WizardScreen({ user, onDone }) {
           <div>
             <Inp label="Ingreso mensual neto ($)" value={data.ingreso} onChange={(v) => setData({ ...data, ingreso: v })} placeholder="Ej: 900000" />
             {data.ingreso > 0 && (
-              <Card style={{ marginTop: 4 }}>
-                <div style={{ color: C.muted, fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 14 }}>TU PRESUPUESTO 50/30/20</div>
+              <Card>
                 {[{ label: "🏠 Gastos fijos (50%)", value: data.ingreso * 0.5, color: C.blue }, { label: "🛍️ Variables (30%)", value: data.ingreso * 0.3, color: C.gold }, { label: "📈 Ahorro (20%)", value: data.ingreso * 0.2, color: C.green }].map((r) => (
                   <div key={r.label} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: `1px solid ${C.border}` }}>
                     <span style={{ color: C.textSoft, fontSize: 13 }}>{r.label}</span>
-                    <span style={{ color: r.color, fontWeight: 800, fontSize: 14 }}>{fmt(r.value)}</span>
+                    <span style={{ color: r.color, fontWeight: 800 }}>{fmt(r.value)}</span>
                   </div>
                 ))}
               </Card>
@@ -485,9 +360,9 @@ function WizardScreen({ user, onDone }) {
         {current.type === "meta" && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             {METAS_OPCIONES.map((m) => (
-              <div key={m.label} onClick={() => setData({ ...data, meta: m.label, metaIcono: m.icon })} style={{ padding: "18px 14px", background: data.meta === m.label ? C.blue + "18" : C.card, border: `2px solid ${data.meta === m.label ? C.blue : C.border}`, borderRadius: 14, cursor: "pointer", textAlign: "center", transition: "all 0.2s" }}>
+              <div key={m.label} onClick={() => setData({ ...data, meta: m.label, metaIcono: m.icon })} style={{ padding: "18px 14px", background: data.meta === m.label ? C.blue + "18" : C.card, border: `2px solid ${data.meta === m.label ? C.blue : C.border}`, borderRadius: 14, cursor: "pointer", textAlign: "center" }}>
                 <div style={{ fontSize: 30, marginBottom: 8 }}>{m.icon}</div>
-                <div style={{ color: data.meta === m.label ? C.blue : C.textSoft, fontWeight: 700, fontSize: 12, lineHeight: 1.4 }}>{m.label}</div>
+                <div style={{ color: data.meta === m.label ? C.blue : C.textSoft, fontWeight: 700, fontSize: 12 }}>{m.label}</div>
               </div>
             ))}
           </div>
@@ -503,7 +378,80 @@ function WizardScreen({ user, onDone }) {
   );
 }
 
-// ── TABS ──────────────────────────────────────────────────────────────────────
+const QUIZ_Q = [
+  { q: "¿Cómo te sentís cuando pagás una deuda completa?", opts: [{ label: "🔥 Me re-energiza, necesito esa victoria", val: "nieve" }, { label: "😐 Bien, pero me importa más ahorrar plata", val: "avalancha" }] },
+  { q: "¿Abandonaste algún plan financiero antes?", opts: [{ label: "😔 Sí, me cuesta sostenerlo", val: "nieve" }, { label: "💪 No, soy constante cuando me lo propongo", val: "avalancha" }] },
+  { q: "¿Qué te importa más?", opts: [{ label: "🎉 Sentir que avanzo rápido", val: "nieve" }, { label: "💰 Pagar la menor cantidad de intereses", val: "avalancha" }] },
+];
+
+function QuizModal({ onClose, onResult }) {
+  const [step, setStep] = useState(0);
+  const [answers, setAnswers] = useState([]);
+  const choose = (val) => {
+    const next = [...answers, val];
+    if (step < QUIZ_Q.length - 1) { setAnswers(next); setStep(step + 1); }
+    else { onResult(next.filter(a => a === "nieve").length >= 2 ? "nieve" : "avalancha"); onClose(); }
+  };
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "#000000CC", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div style={{ background: C.card, border: `1px solid ${C.borderLight}`, borderRadius: 20, padding: 28, maxWidth: 400, width: "100%" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}>
+          <div style={{ color: C.gold, fontWeight: 700, fontSize: 12 }}>PREGUNTA {step + 1} DE {QUIZ_Q.length}</div>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: C.muted, cursor: "pointer", fontSize: 20 }}>×</button>
+        </div>
+        <div style={{ display: "flex", gap: 6, marginBottom: 24 }}>
+          {QUIZ_Q.map((_, i) => <div key={i} style={{ flex: 1, height: 4, borderRadius: 99, background: i <= step ? C.gold : C.border }} />)}
+        </div>
+        <div style={{ color: C.text, fontSize: 17, fontWeight: 700, lineHeight: 1.5, marginBottom: 24 }}>{QUIZ_Q[step].q}</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {QUIZ_Q[step].opts.map((o) => (
+            <button key={o.val} onClick={() => choose(o.val)} style={{ padding: "16px 18px", background: C.surface, border: `1px solid ${C.borderLight}`, borderRadius: 14, color: C.text, textAlign: "left", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 600 }}>{o.label}</button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MetodoCards({ selected, onSelect }) {
+  const methods = [
+    { id: "nieve", emoji: "❄️", name: "Bola de Nieve", tagline: "El método que motiva", color: C.snow, pasos: "Atacás primero la deuda más CHICA. Cada victoria te da impulso para la siguiente.", para: "Necesitás motivación constante o ya tiraste la toalla antes.", pros: ["Victoria rápida", "Reduce el estrés", "Más fácil de sostener"], contra: "Pagás más intereses en total" },
+    { id: "avalancha", emoji: "⛰️", name: "Avalancha", tagline: "El método que ahorra", color: C.avalanche, pasos: "Atacás primero la deuda con la TASA MÁS ALTA. Cada peso extra reduce lo más caro.", para: "Sos disciplinado/a y querés pagar menos intereses.", pros: ["Ahorrás más plata", "Matemáticamente óptimo", "Salís antes"], contra: "Tardás más en ver la primera deuda caer" },
+  ];
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 20 }}>
+      {methods.map((m) => {
+        const sel = selected === m.id;
+        return (
+          <div key={m.id} onClick={() => onSelect(m.id)} style={{ background: sel ? m.color + "12" : C.card, border: `2px solid ${sel ? m.color : C.border}`, borderRadius: 16, padding: "18px 20px", cursor: "pointer" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 26 }}>{m.emoji}</span>
+                <div>
+                  <div style={{ color: sel ? m.color : C.text, fontWeight: 800, fontSize: 15 }}>{m.name}</div>
+                  <div style={{ color: C.muted, fontSize: 12 }}>{m.tagline}</div>
+                </div>
+              </div>
+              {sel && <Pill color={m.color}>ELEGIDO</Pill>}
+            </div>
+            <div style={{ color: C.textSoft, fontSize: 13, lineHeight: 1.6, paddingLeft: 36 }}>{m.pasos}</div>
+            {sel && (
+              <div style={{ paddingLeft: 36, marginTop: 12 }}>
+                <div style={{ background: m.color + "15", borderRadius: 10, padding: "10px 14px", marginBottom: 10 }}>
+                  <div style={{ color: m.color, fontSize: 11, fontWeight: 700, marginBottom: 4 }}>IDEAL PARA VOS SI...</div>
+                  <div style={{ color: C.textSoft, fontSize: 13 }}>{m.para}</div>
+                </div>
+                {m.pros.map((p, i) => <div key={i} style={{ display: "flex", gap: 8, marginBottom: 4 }}><span style={{ color: C.green, fontSize: 12 }}>✓</span><span style={{ color: C.textSoft, fontSize: 13 }}>{p}</span></div>)}
+                <div style={{ display: "flex", gap: 8, marginTop: 4 }}><span style={{ color: C.red, fontSize: 12 }}>✗</span><span style={{ color: C.textSoft, fontSize: 13 }}>{m.contra}</span></div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 const TABS = [
   { id: "dashboard", label: "Inicio", icon: "◈" },
   { id: "deudas", label: "Deudas", icon: "💳" },
@@ -512,25 +460,19 @@ const TABS = [
   { id: "metas", label: "Metas", icon: "🎯" },
 ];
 
-// ── DASHBOARD ─────────────────────────────────────────────────────────────────
 function DashboardTab({ user, data, onSignOut }) {
   const totalDeuda = data.deudas.reduce((s, d) => s + d.saldo, 0);
   const totalHormiga = data.hormiga.reduce((s, h) => s + h.anual, 0);
   const metasPct = data.metas.length > 0 ? Math.round(data.metas.reduce((s, m) => s + pct(m.actual, m.objetivo), 0) / data.metas.length) : 0;
   return (
     <div>
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 34, height: 34, background: C.gold + "22", border: `1px solid ${C.gold}44`, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>🌿</div>
-            <div style={{ color: C.gold, fontSize: 10, fontWeight: 700, letterSpacing: 2 }}>SAL DE LAS DEUDAS · 2026</div>
-          </div>
-          <button onClick={onSignOut} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, color: C.muted, padding: "7px 12px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, flexShrink: 0 }}>Salir</button>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
+        <div>
+          <div style={{ color: C.gold, fontSize: 10, fontWeight: 700, letterSpacing: 3, marginBottom: 6 }}>SAL DE LAS DEUDAS · 2026</div>
+          <h1 style={{ color: C.text, fontSize: 22, fontWeight: 900, margin: "0 0 4px" }}>Hola, {user?.displayName?.split(" ")[0] || user?.email?.split("@")[0]} 👋</h1>
+          <p style={{ color: C.muted, fontSize: 12, margin: 0 }}>Tu panorama financiero</p>
         </div>
-        <h1 style={{ color: C.text, fontSize: 26, fontWeight: 900, margin: "0 0 4px" }}>
-          Hola, {user?.displayName?.split(" ")[0] || "bienvenido/a"} 👋
-        </h1>
-        <p style={{ color: C.muted, fontSize: 12, margin: 0 }}>Tu panorama financiero</p>
+        <button onClick={onSignOut} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, color: C.muted, padding: "8px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>Salir</button>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
         {[
@@ -549,17 +491,6 @@ function DashboardTab({ user, data, onSignOut }) {
           </Card>
         ))}
       </div>
-      {totalHormiga > 500000 && (
-        <div style={{ background: C.gold + "12", border: `1px solid ${C.gold}44`, borderRadius: 16, padding: "16px 18px", marginBottom: 20 }}>
-          <div style={{ display: "flex", gap: 12 }}>
-            <span style={{ fontSize: 24 }}>⚠️</span>
-            <div>
-              <div style={{ color: C.gold, fontWeight: 800, fontSize: 14, marginBottom: 4 }}>Tus gastos hormiga te cuestan {fmt(totalHormiga)} al año</div>
-              <div style={{ color: C.textSoft, fontSize: 13 }}>Redirigidos a deudas, podrías liquidarlas mucho antes.</div>
-            </div>
-          </div>
-        </div>
-      )}
       {data.presupuesto.ingreso > 0 && (
         <Card style={{ marginBottom: 20 }}>
           <div style={{ color: C.muted, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 16 }}>DISTRIBUCIÓN DEL INGRESO</div>
@@ -574,25 +505,10 @@ function DashboardTab({ user, data, onSignOut }) {
           ))}
         </Card>
       )}
-      {data.deudas.length > 0 && (
-        <Card>
-          <div style={{ color: C.muted, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 16 }}>DEUDAS ACTIVAS</div>
-          {data.deudas.slice(0, 3).map((d, i) => (
-            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: i < Math.min(data.deudas.length, 3) - 1 ? `1px solid ${C.border}` : "none" }}>
-              <div>
-                <div style={{ color: C.text, fontWeight: 600, fontSize: 14 }}>{d.nombre}</div>
-                <div style={{ color: C.muted, fontSize: 12 }}>TNA {d.tna}%</div>
-              </div>
-              <div style={{ color: C.red, fontWeight: 800 }}>{fmt(d.saldo)}</div>
-            </div>
-          ))}
-        </Card>
-      )}
     </div>
   );
 }
 
-// ── DEUDAS ────────────────────────────────────────────────────────────────────
 function DeudasTab({ data, onChange }) {
   const { deudas } = data;
   const [form, setForm] = useState({ nombre: "", saldo: 0, tna: 0, minimo: 0 });
@@ -600,11 +516,7 @@ function DeudasTab({ data, onChange }) {
   const [metodo, setMetodo] = useState("nieve");
   const [showQuiz, setShowQuiz] = useState(false);
   const setDeudas = (d) => onChange({ ...data, deudas: d });
-  const addDeuda = () => {
-    if (!form.nombre || form.saldo <= 0) return;
-    setDeudas([...deudas, { ...form }]);
-    setForm({ nombre: "", saldo: 0, tna: 0, minimo: 0 });
-  };
+  const addDeuda = () => { if (!form.nombre || form.saldo <= 0) return; setDeudas([...deudas, { ...form }]); setForm({ nombre: "", saldo: 0, tna: 0, minimo: 0 }); };
   const ordenadas = [...deudas].sort((a, b) => metodo === "nieve" ? a.saldo - b.saldo : b.tna - a.tna);
   const totalDeuda = deudas.reduce((s, d) => s + d.saldo, 0);
   const totalMinimos = deudas.reduce((s, d) => s + d.minimo, 0);
@@ -615,10 +527,8 @@ function DeudasTab({ data, onChange }) {
         <div style={{ color: C.gold, fontSize: 10, fontWeight: 700, letterSpacing: 2.5, marginBottom: 6 }}>MÓDULO 1</div>
         <h2 style={{ color: C.text, fontSize: 22, fontWeight: 900, margin: "0 0 6px" }}>Mis Deudas</h2>
       </div>
-      <InfoBanner icon="💡" title="¿Cómo funciona?" color={C.blue} text="Elegí un método o hacé el quiz. Cargá tus deudas con saldo, tasa y mínimo. La app te ordena cuál atacar primero y cuántos meses te lleva." />
-      <button onClick={() => setShowQuiz(true)} style={{ width: "100%", padding: "13px", background: C.purple + "22", border: `1px solid ${C.purple}55`, borderRadius: 12, color: C.purple, fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit", marginBottom: 20 }}>
-        ⚡ ¿No sabés cuál método usar? Hacé el quiz
-      </button>
+      <InfoBanner icon="💡" title="¿Cómo funciona?" color={C.blue} text="Elegí un método o hacé el quiz. Cargá tus deudas con saldo, tasa y mínimo. La app te ordena cuál atacar primero." />
+      <button onClick={() => setShowQuiz(true)} style={{ width: "100%", padding: "13px", background: C.purple + "22", border: `1px solid ${C.purple}55`, borderRadius: 12, color: C.purple, fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit", marginBottom: 20 }}>⚡ ¿No sabés cuál método usar? Hacé el quiz</button>
       <MetodoCards selected={metodo} onSelect={setMetodo} />
       <Card style={{ marginBottom: 20 }}>
         <div style={{ color: C.muted, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 16 }}>AGREGAR DEUDA</div>
@@ -658,12 +568,7 @@ function DeudasTab({ data, onChange }) {
                         {i === 0 ? <Pill color={C.gold}>FOCO</Pill> : <Pill color={C.muted}>ESPERA</Pill>}
                       </div>
                       <div style={{ color: C.muted, fontSize: 12, marginTop: 4 }}>{fmt(d.saldo)} · TNA {d.tna}%</div>
-                      {i === 0 && extra > 0 && (
-                        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
-                          <span style={{ color: C.gold, fontSize: 12 }}>Pagando {fmt(pagoTotal)}/mes</span>
-                          <span style={{ color: C.gold, fontSize: 12, fontWeight: 700 }}>~{meses} meses</span>
-                        </div>
-                      )}
+                      {i === 0 && extra > 0 && <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}><span style={{ color: C.gold, fontSize: 12 }}>Pagando {fmt(pagoTotal)}/mes</span><span style={{ color: C.gold, fontSize: 12, fontWeight: 700 }}>~{meses} meses</span></div>}
                     </div>
                     <button onClick={() => setDeudas(deudas.filter((_, idx) => idx !== deudas.indexOf(d)))} style={{ background: "none", border: "none", color: C.red, cursor: "pointer", fontSize: 20 }}>×</button>
                   </div>
@@ -678,7 +583,6 @@ function DeudasTab({ data, onChange }) {
   );
 }
 
-// ── PRESUPUESTO ───────────────────────────────────────────────────────────────
 function PresupuestoTab({ data, onChange }) {
   const { presupuesto } = data;
   const up = (key, val) => onChange({ ...data, presupuesto: { ...presupuesto, [key]: val } });
@@ -695,14 +599,14 @@ function PresupuestoTab({ data, onChange }) {
         <div style={{ color: C.gold, fontSize: 10, fontWeight: 700, letterSpacing: 2.5, marginBottom: 6 }}>MÓDULO 2</div>
         <h2 style={{ color: C.text, fontSize: 22, fontWeight: 900, margin: "0 0 6px" }}>Presupuesto 50/30/20</h2>
       </div>
-      <InfoBanner icon="📖" title="¿Qué es la regla 50/30/20?" color={C.green} text="Dividís tu ingreso: 50% necesidades, 30% gustos y 20% ahorro e inversión. En Argentina es una guía flexible, no una camisa de fuerza." />
+      <InfoBanner icon="📖" title="¿Qué es la regla 50/30/20?" color={C.green} text="Dividís tu ingreso: 50% para necesidades, 30% para gustos y 20% para ahorro e inversión." />
       <Card style={{ marginBottom: 20 }}>
         <Inp label="Ingreso mensual neto ($)" value={ingreso} onChange={(v) => up("ingreso", v)} placeholder="Ej: 900000" />
         {ingreso > 0 && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
             {[{ label: "50% FIJOS", value: ingreso * 0.5, color: C.blue }, { label: "30% VAR.", value: ingreso * 0.3, color: C.gold }, { label: "20% AHORRO", value: ingreso * 0.2, color: C.green }].map((s) => (
               <div key={s.label} style={{ textAlign: "center", padding: "10px 8px", background: C.surface, borderRadius: 10 }}>
-                <div style={{ color: C.muted, fontSize: 9, fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>{s.label}</div>
+                <div style={{ color: C.muted, fontSize: 9, fontWeight: 700, marginBottom: 4 }}>{s.label}</div>
                 <div style={{ color: s.color, fontWeight: 800, fontSize: 13 }}>{fmt(s.value)}</div>
               </div>
             ))}
@@ -714,22 +618,17 @@ function PresupuestoTab({ data, onChange }) {
         return (
           <Card key={r.key} style={{ marginBottom: 16, borderColor: over ? C.red + "55" : C.border }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-              <div>
-                <div style={{ color: C.text, fontWeight: 700, fontSize: 15 }}>{r.icon} {r.label}</div>
-                <div style={{ color: C.muted, fontSize: 12, marginTop: 2 }}>{r.desc}</div>
-              </div>
+              <div><div style={{ color: C.text, fontWeight: 700, fontSize: 15 }}>{r.icon} {r.label}</div><div style={{ color: C.muted, fontSize: 12 }}>{r.desc}</div></div>
               {ingreso > 0 && <Pill color={over ? C.red : r.color}>{pct(presupuesto[r.key], ingreso)}%</Pill>}
             </div>
             <Inp label="Monto real este mes ($)" value={presupuesto[r.key]} onChange={(v) => up(r.key, v)} placeholder="Ej: 450000" />
-            {ingreso > 0 && (
-              <>
-                <Bar value={presupuesto[r.key]} max={ingreso} color={over ? C.red : r.color} />
-                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
-                  <span style={{ color: C.muted, fontSize: 12 }}>Meta: {fmt(r.target)}</span>
-                  {over && <span style={{ color: C.red, fontSize: 12, fontWeight: 700 }}>⚠ +{fmt(presupuesto[r.key] - r.target)}</span>}
-                </div>
-              </>
-            )}
+            {ingreso > 0 && <>
+              <Bar value={presupuesto[r.key]} max={ingreso} color={over ? C.red : r.color} />
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
+                <span style={{ color: C.muted, fontSize: 12 }}>Meta: {fmt(r.target)}</span>
+                {over && <span style={{ color: C.red, fontSize: 12, fontWeight: 700 }}>⚠ +{fmt(presupuesto[r.key] - r.target)}</span>}
+              </div>
+            </>}
           </Card>
         );
       })}
@@ -737,7 +636,7 @@ function PresupuestoTab({ data, onChange }) {
         <Card glow={restante >= 0 ? C.green : C.red}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
-              <div style={{ color: C.textSoft, fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>RESTANTE DEL MES</div>
+              <div style={{ color: C.textSoft, fontSize: 11, fontWeight: 700 }}>RESTANTE DEL MES</div>
               <div style={{ color: C.muted, fontSize: 12, marginTop: 4 }}>{restante >= 0 ? "✓ Sumalo a deudas o ahorro" : "✗ Estás gastando más de lo que entra"}</div>
             </div>
             <div style={{ color: restante >= 0 ? C.green : C.red, fontSize: 22, fontWeight: 900 }}>{fmt(restante)}</div>
@@ -748,32 +647,26 @@ function PresupuestoTab({ data, onChange }) {
   );
 }
 
-// ── HORMIGA ───────────────────────────────────────────────────────────────────
 function HormigaTab({ data, onChange }) {
   const { hormiga } = data;
   const [form, setForm] = useState({ nombre: "", monto: 0, frecuencia: "semanal" });
   const FREC = [{ value: "diario", label: "Diario", mult: 365 }, { value: "semanal", label: "Semanal", mult: 52 }, { value: "mensual", label: "Mensual", mult: 12 }];
   const setHormiga = (h) => onChange({ ...data, hormiga: h });
-  const addH = () => {
-    if (!form.nombre || form.monto <= 0) return;
-    const mult = FREC.find(f => f.value === form.frecuencia).mult;
-    setHormiga([...hormiga, { ...form, anual: form.monto * mult }]);
-    setForm({ nombre: "", monto: 0, frecuencia: "semanal" });
-  };
+  const addH = () => { if (!form.nombre || form.monto <= 0) return; const mult = FREC.find(f => f.value === form.frecuencia).mult; setHormiga([...hormiga, { ...form, anual: form.monto * mult }]); setForm({ nombre: "", monto: 0, frecuencia: "semanal" }); };
   const totalAnual = hormiga.reduce((s, h) => s + h.anual, 0);
-  const ejemplos = [{ nombre: "☕ Café en cadena", monto: 5500, frecuencia: "semanal" }, { nombre: "🛵 Delivery", monto: 25000, frecuencia: "semanal" }, { nombre: "🚗 Uber corto", monto: 4500, frecuencia: "semanal" }, { nombre: "📱 App premium", monto: 5500, frecuencia: "mensual" }, { nombre: "🍔 Snack kiosco", monto: 2500, frecuencia: "diario" }];
+  const ejemplos = [{ nombre: "☕ Café en cadena", monto: 5500, frecuencia: "semanal" }, { nombre: "🛵 Delivery", monto: 25000, frecuencia: "semanal" }, { nombre: "🚗 Uber corto", monto: 4500, frecuencia: "semanal" }, { nombre: "📱 App premium", monto: 5500, frecuencia: "mensual" }];
   return (
     <div>
       <div style={{ marginBottom: 24 }}>
         <div style={{ color: C.gold, fontSize: 10, fontWeight: 700, letterSpacing: 2.5, marginBottom: 6 }}>MÓDULO 3</div>
         <h2 style={{ color: C.text, fontSize: 22, fontWeight: 900, margin: "0 0 6px" }}>Gastos Hormiga</h2>
       </div>
-      <InfoBanner icon="🐜" title="¿Qué son los gastos hormiga?" color={C.gold} text="Son consumos pequeños y frecuentes: el cafecito, el delivery, el Uber de 10 cuadras. Un café de $5.500 tres veces por semana son $858.000 al año." />
+      <InfoBanner icon="🐜" title="¿Qué son los gastos hormiga?" color={C.gold} text="Son consumos pequeños y frecuentes. Un café de $5.500 tres veces por semana son $858.000 al año." />
       {totalAnual > 0 && (
         <div style={{ background: C.gold + "12", border: `1px solid ${C.gold}44`, borderRadius: 18, padding: "22px", marginBottom: 20, textAlign: "center" }}>
           <div style={{ color: C.muted, fontSize: 10, fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>ESTÁS PERDIENDO AL AÑO</div>
           <div style={{ color: C.gold, fontSize: 36, fontWeight: 900 }}>{fmt(totalAnual)}</div>
-          <div style={{ color: C.textSoft, fontSize: 13, marginTop: 10 }}>{fmt(Math.round(totalAnual / 12))}/mes · {fmt(Math.round(totalAnual / 52))}/semana</div>
+          <div style={{ color: C.textSoft, fontSize: 13, marginTop: 10 }}>{fmt(Math.round(totalAnual / 12))}/mes</div>
         </div>
       )}
       <div style={{ marginBottom: 16 }}>
@@ -800,10 +693,7 @@ function HormigaTab({ data, onChange }) {
         <Card>
           {hormiga.map((h, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: i < hormiga.length - 1 ? `1px solid ${C.border}` : "none" }}>
-              <div>
-                <div style={{ color: C.text, fontWeight: 600 }}>{h.nombre}</div>
-                <div style={{ color: C.muted, fontSize: 12, marginTop: 2 }}>{fmt(h.monto)} · {h.frecuencia}</div>
-              </div>
+              <div><div style={{ color: C.text, fontWeight: 600 }}>{h.nombre}</div><div style={{ color: C.muted, fontSize: 12, marginTop: 2 }}>{fmt(h.monto)} · {h.frecuencia}</div></div>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <div style={{ color: C.red, fontWeight: 800 }}>{fmt(h.anual)}/año</div>
                 <button onClick={() => setHormiga(hormiga.filter((_, idx) => idx !== i))} style={{ background: "none", border: "none", color: C.red, cursor: "pointer", fontSize: 20 }}>×</button>
@@ -817,24 +707,19 @@ function HormigaTab({ data, onChange }) {
   );
 }
 
-// ── METAS ─────────────────────────────────────────────────────────────────────
 function MetasTab({ data, onChange }) {
   const { metas } = data;
   const [form, setForm] = useState({ nombre: "", objetivo: 0, actual: 0, icono: "🎯" });
   const ICONOS = ["🎯", "🏖️", "🚗", "🏠", "📚", "💊", "💍", "✈️", "💻", "🛡️", "🐕", "🏋️"];
   const setMetas = (m) => onChange({ ...data, metas: m });
-  const addMeta = () => {
-    if (!form.nombre || form.objetivo <= 0) return;
-    setMetas([...metas, { ...form }]);
-    setForm({ nombre: "", objetivo: 0, actual: 0, icono: "🎯" });
-  };
+  const addMeta = () => { if (!form.nombre || form.objetivo <= 0) return; setMetas([...metas, { ...form }]); setForm({ nombre: "", objetivo: 0, actual: 0, icono: "🎯" }); };
   return (
     <div>
       <div style={{ marginBottom: 24 }}>
         <div style={{ color: C.gold, fontSize: 10, fontWeight: 700, letterSpacing: 2.5, marginBottom: 6 }}>MÓDULO 4</div>
         <h2 style={{ color: C.text, fontSize: 22, fontWeight: 900, margin: "0 0 6px" }}>Mis Metas</h2>
       </div>
-      <InfoBanner icon="🎯" title="¿Para qué sirven las metas?" color={C.green} text="Sin una meta concreta, el dinero que ahorrás se evapora. Definir metas te da un 'para qué' que sostiene el esfuerzo en el tiempo." />
+      <InfoBanner icon="🎯" title="¿Para qué sirven las metas?" color={C.green} text="Sin una meta concreta, el dinero que ahorrás se evapora. Definir metas te da un 'para qué' que sostiene el esfuerzo." />
       <Card style={{ marginBottom: 20 }}>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
           {ICONOS.map((ic) => <button key={ic} onClick={() => setForm({ ...form, icono: ic })} style={{ width: 40, height: 40, fontSize: 20, background: form.icono === ic ? C.green + "22" : C.surface, border: `2px solid ${form.icono === ic ? C.green : C.border}`, borderRadius: 10, cursor: "pointer" }}>{ic}</button>)}
@@ -877,14 +762,13 @@ function MetasTab({ data, onChange }) {
   );
 }
 
-// ── MAIN APP ──────────────────────────────────────────────────────────────────
 export default function App() {
+  const [screen, setScreen] = useState("loading");
   const [user, setUser] = useState(null);
-  const [authLoading, setAuthLoading] = useState(true);
-  const [data, setData] = useState(DEFAULT_DATA);
+  const [appData, setAppData] = useState(DEFAULT_DATA);
   const [tab, setTab] = useState("dashboard");
   const [saving, setSaving] = useState(false);
-  const [isNew, setIsNew] = useState(false);
+  const [isNewUser, setIsNewUser] = useState(false);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
@@ -893,37 +777,50 @@ export default function App() {
         try {
           const snap = await getDoc(doc(db, "usuarios", u.uid));
           if (snap.exists()) {
-            setData({ ...DEFAULT_DATA, ...snap.data() });
-            setIsNew(false);
+            setAppData({ ...DEFAULT_DATA, ...snap.data() });
+            setScreen("app");
           } else {
-            setIsNew(true);
+            setIsNewUser(true);
+            setScreen("wizard");
           }
-        } catch (e) { console.error(e); setIsNew(true); }
+        } catch (e) {
+          setScreen("app");
+        }
+      } else {
+        setScreen("slides");
       }
-      setAuthLoading(false);
     });
     return unsub;
   }, []);
 
   useEffect(() => {
-    if (!user || isNew) return;
+    if (!user) return;
     setSaving(true);
     const timer = setTimeout(async () => {
-      await saveUserData(user.uid, data);
+      await saveUserData(user.uid, appData);
       setSaving(false);
     }, 1500);
     return () => clearTimeout(timer);
-  }, [data, user]);
+  }, [appData, user]);
 
-  const handleSignOut = () => { signOut(auth); setData(DEFAULT_DATA); setIsNew(false); };
-
-  const handleWizardDone = async (wizardData) => {
-    setData(wizardData);
-    setIsNew(false);
-    await saveUserData(user.uid, wizardData);
+  const handleAuth = (firebaseUser) => {
+    setUser(firebaseUser);
   };
 
-  if (authLoading) {
+  const handleWizardDone = (data) => {
+    setAppData(data);
+    setIsNewUser(false);
+    setScreen("app");
+  };
+
+  const handleSignOut = () => {
+    signOut(auth);
+    setUser(null);
+    setAppData(DEFAULT_DATA);
+    setScreen("slides");
+  };
+
+  if (screen === "loading") {
     return (
       <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16, fontFamily: "'Georgia', serif" }}>
         <div style={{ width: 56, height: 56, background: C.gold + "22", border: `1px solid ${C.gold}44`, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>🌿</div>
@@ -932,23 +829,19 @@ export default function App() {
     );
   }
 
-  if (!user) return <SlidesScreen onDone={() => {}} />;
-  if (!user && authLoading === false) return <LoginScreen onAuth={setUser} />;
-  if (isNew) return <WizardScreen user={user} onDone={handleWizardDone} />;
+  if (screen === "slides") return <SlidesScreen onDone={() => setScreen("login")} />;
+  if (screen === "login") return <LoginScreen onAuth={handleAuth} />;
+  if (screen === "wizard") return <WizardScreen user={user} onDone={handleWizardDone} />;
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, fontFamily: "'Georgia', serif", color: C.text, maxWidth: 480, margin: "0 auto" }}>
-      {saving && (
-        <div style={{ position: "fixed", top: 12, right: 16, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 99, padding: "6px 14px", fontSize: 11, color: C.muted, zIndex: 50 }}>
-          Guardando...
-        </div>
-      )}
+      {saving && <div style={{ position: "fixed", top: 12, right: 16, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 99, padding: "6px 14px", fontSize: 11, color: C.muted, zIndex: 50 }}>Guardando...</div>}
       <div style={{ padding: "28px 22px 96px" }}>
-        {tab === "dashboard" && <DashboardTab user={user} data={data} onSignOut={handleSignOut} />}
-        {tab === "deudas" && <DeudasTab data={data} onChange={setData} />}
-        {tab === "presupuesto" && <PresupuestoTab data={data} onChange={setData} />}
-        {tab === "hormiga" && <HormigaTab data={data} onChange={setData} />}
-        {tab === "metas" && <MetasTab data={data} onChange={setData} />}
+        {tab === "dashboard" && <DashboardTab user={user} data={appData} onSignOut={handleSignOut} />}
+        {tab === "deudas" && <DeudasTab data={appData} onChange={setAppData} />}
+        {tab === "presupuesto" && <PresupuestoTab data={appData} onChange={setAppData} />}
+        {tab === "hormiga" && <HormigaTab data={appData} onChange={setAppData} />}
+        {tab === "metas" && <MetasTab data={appData} onChange={setAppData} />}
       </div>
       <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, background: C.surface, borderTop: `1px solid ${C.border}`, display: "flex", padding: "10px 0 18px" }}>
         {TABS.map((t) => (
