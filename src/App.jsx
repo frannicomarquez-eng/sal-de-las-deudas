@@ -3,14 +3,14 @@ import { initializeApp } from "firebase/app";
 import {
   getAuth,
   GoogleAuthProvider,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
   sendPasswordResetEmail,
-} from "firebase/auth";
-import {
+} from "firebase/auth";import {
   getFirestore,
   doc,
   setDoc,
@@ -208,10 +208,8 @@ function LoginScreen({ onAuth }) {
   const handleGoogle = async () => {
     setGLoading(true); setError("");
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      onAuth(result.user);
-    } catch (e) { if (e.code !== "auth/popup-closed-by-user") setError(errMsg(e.code)); }
-    finally { setGLoading(false); }
+      await signInWithRedirect(auth, googleProvider);
+    } catch (e) { setError(errMsg(e.code)); setGLoading(false); }
   };
 
   const handleSubmit = async () => {
@@ -771,6 +769,13 @@ export default function App() {
   const [isNewUser, setIsNewUser] = useState(false);
 
   useEffect(() => {
+    // Manejar redirect de Google
+    getRedirectResult(auth).then((result) => {
+      if (result?.user) {
+        setUser(result.user);
+      }
+    }).catch((e) => console.error("Redirect error:", e));
+
     const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       if (u) {
