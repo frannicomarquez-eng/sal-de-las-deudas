@@ -211,7 +211,7 @@ function LoginScreen({ onAuth }) {
       onAuth(result.user);
     } catch (e) {
       console.error("Google login error:", e.code, e.message);
-      if (e.code !== "auth/popup-closed-by-user") setError(`Error: ${e.code || e.message}`);
+      if (e.code !== "auth/popup-closed-by-user") setError(errMsg(e.code));
       setGLoading(false);
     }
   };
@@ -806,6 +806,7 @@ export default function App() {
   }, [appData, user]);
 
   const handleAuth = (firebaseUser) => {
+    setScreen("loading");
     setUser(firebaseUser);
   };
 
