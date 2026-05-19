@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { initializeApp } from "firebase/app";
 import {
   getAuth,
@@ -804,16 +804,17 @@ export default function App() {
   const [tab, setTab] = useState("dashboard");
   const [saving, setSaving] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
+  const unauthorizedRef = useRef(false);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
-      setUser(u);
       if (u) {
+        unauthorizedRef.current = false;
         try {
-          // Verificar si el email está autorizado
           const authSnap = await getDocs(query(collection(db, "autorizados"), where("email", "==", u.email)));
           if (authSnap.empty) {
             await signOut(auth);
+            unauthorizedRef.current = true;
             setUser(null);
             setScreen("unauthorized");
             return;
@@ -821,6 +822,7 @@ export default function App() {
           const authData = authSnap.docs[0].data();
           setUserRol(authData.rol || "usuario");
           setUserNombre(authData.nombre || "");
+          setUser(u);
           const snap = await getDoc(doc(db, "usuarios", u.uid));
           if (snap.exists()) {
             setAppData({ ...DEFAULT_DATA, ...snap.data() });
@@ -830,10 +832,11 @@ export default function App() {
             setScreen("wizard");
           }
         } catch (e) {
+          setUser(u);
           setScreen("app");
         }
-      } else if (screen !== "unauthorized") {
-        setScreen("slides");
+      } else {
+        if (!unauthorizedRef.current) setScreen("slides");
       }
     });
     return unsub;
@@ -849,9 +852,8 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [appData, user]);
 
-  const handleAuth = (firebaseUser) => {
-    setScreen("loading");
-    setUser(firebaseUser);
+  const handleAuth = () => {
+    // onAuthStateChanged maneja toda la transición de pantalla
   };
 
   const handleWizardDone = (data) => {
