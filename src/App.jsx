@@ -210,7 +210,8 @@ function LoginScreen({ onAuth }) {
       const result = await signInWithPopup(auth, googleProvider);
       onAuth(result.user);
     } catch (e) {
-      if (e.code !== "auth/popup-closed-by-user") setError(errMsg(e.code));
+      console.error("Google login error:", e.code, e.message);
+      if (e.code !== "auth/popup-closed-by-user") setError(`Error: ${e.code || e.message}`);
       setGLoading(false);
     }
   };
