@@ -212,9 +212,9 @@ function LoginScreen({ onAuth }) {
     setGLoading(true); setError("");
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      onAuth(result.user);
+      sessionReady.current = true; // evitar que onAuthStateChanged interfiera
+      await onAuth(result.user);
     } catch (e) {
-      console.error("Google login error:", e.code, e.message);
       if (e.code !== "auth/popup-closed-by-user") setError(errMsg(e.code));
       setGLoading(false);
     }
@@ -804,39 +804,44 @@ export default function App() {
   const [tab, setTab] = useState("dashboard");
   const [saving, setSaving] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
-  const unauthorizedRef = useRef(false);
+  const sessionReady = useRef(false);
 
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (u) => {
-      if (u) {
-        unauthorizedRef.current = false;
-        try {
-          const authSnap = await getDocs(query(collection(db, "autorizados"), where("email", "==", u.email)));
-          if (authSnap.empty) {
-            await signOut(auth);
-            unauthorizedRef.current = true;
-            setUser(null);
-            setScreen("unauthorized");
-            return;
-          }
-          const authData = authSnap.docs[0].data();
-          setUserRol(authData.rol || "usuario");
-          setUserNombre(authData.nombre || "");
-          setUser(u);
-          const snap = await getDoc(doc(db, "usuarios", u.uid));
-          if (snap.exists()) {
-            setAppData({ ...DEFAULT_DATA, ...snap.data() });
-            setScreen("app");
-          } else {
-            setIsNewUser(true);
-            setScreen("wizard");
-          }
-        } catch (e) {
-          setUser(u);
-          setScreen("app");
-        }
+  // Función central: verifica autorización y carga datos del usuario
+  const processUser = async (u) => {
+    try {
+      const authSnap = await getDocs(query(collection(db, "autorizados"), where("email", "==", u.email)));
+      if (authSnap.empty) {
+        await signOut(auth);
+        setUser(null);
+        setScreen("unauthorized");
+        return;
+      }
+      const authData = authSnap.docs[0].data();
+      setUserRol(authData.rol || "usuario");
+      setUserNombre(authData.nombre || "");
+      setUser(u);
+      const snap = await getDoc(doc(db, "usuarios", u.uid));
+      if (snap.exists()) {
+        setAppData({ ...DEFAULT_DATA, ...snap.data() });
       } else {
-        if (!unauthorizedRef.current) setScreen("slides");
+        setIsNewUser(true);
+      }
+      setScreen(snap.exists() ? "app" : "wizard");
+    } catch (e) {
+      setUser(u);
+      setScreen("app");
+    }
+  };
+
+  // Solo maneja la sesión previa al abrir la app (refresh de página)
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (u) => {
+      if (sessionReady.current) return;
+      sessionReady.current = true;
+      if (u) {
+        processUser(u);
+      } else {
+        setScreen("slides");
       }
     });
     return unsub;
@@ -852,8 +857,8 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [appData, user]);
 
-  const handleAuth = () => {
-    // onAuthStateChanged maneja toda la transición de pantalla
+  const handleAuth = async (firebaseUser) => {
+    await processUser(firebaseUser);
   };
 
   const handleWizardDone = (data) => {
