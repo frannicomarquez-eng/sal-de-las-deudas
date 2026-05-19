@@ -466,16 +466,27 @@ const TABS = [
   { id: "metas", label: "Metas", icon: "🎯" },
 ];
 
-function DashboardTab({ user, data, onSignOut }) {
+const ROL_CONFIG = {
+  admin:   { label: "ADMIN",   color: C.gold },
+  beta:    { label: "BETA",    color: C.purple },
+  usuario: { label: "USUARIO", color: C.blue },
+};
+
+function DashboardTab({ user, data, onSignOut, rol = "usuario", nombre = "" }) {
   const totalDeuda = data.deudas.reduce((s, d) => s + d.saldo, 0);
   const totalHormiga = data.hormiga.reduce((s, h) => s + h.anual, 0);
   const metasPct = data.metas.length > 0 ? Math.round(data.metas.reduce((s, m) => s + pct(m.actual, m.objetivo), 0) / data.metas.length) : 0;
+  const displayName = nombre || user?.displayName?.split(" ")[0] || user?.email?.split("@")[0];
+  const rolCfg = ROL_CONFIG[rol] || ROL_CONFIG.usuario;
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
         <div>
-          <div style={{ color: C.gold, fontSize: 10, fontWeight: 700, letterSpacing: 3, marginBottom: 6 }}>SAL DE LAS DEUDAS · 2026</div>
-          <h1 style={{ color: C.text, fontSize: 22, fontWeight: 900, margin: "0 0 4px" }}>Hola, {user?.displayName?.split(" ")[0] || user?.email?.split("@")[0]} 👋</h1>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+            <div style={{ color: C.gold, fontSize: 10, fontWeight: 700, letterSpacing: 3 }}>SAL DE LAS DEUDAS · 2026</div>
+            <span style={{ background: rolCfg.color + "22", color: rolCfg.color, border: `1px solid ${rolCfg.color}44`, borderRadius: 99, padding: "2px 8px", fontSize: 9, fontWeight: 700, letterSpacing: 1 }}>{rolCfg.label}</span>
+          </div>
+          <h1 style={{ color: C.text, fontSize: 22, fontWeight: 900, margin: "0 0 4px" }}>Hola, {displayName} 👋</h1>
           <p style={{ color: C.muted, fontSize: 12, margin: 0 }}>Tu panorama financiero</p>
         </div>
         <button onClick={onSignOut} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, color: C.muted, padding: "8px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>Salir</button>
@@ -787,6 +798,8 @@ function UnauthorizedScreen({ email, onBack }) {
 export default function App() {
   const [screen, setScreen] = useState("loading");
   const [user, setUser] = useState(null);
+  const [userRol, setUserRol] = useState("usuario");
+  const [userNombre, setUserNombre] = useState("");
   const [appData, setAppData] = useState(DEFAULT_DATA);
   const [tab, setTab] = useState("dashboard");
   const [saving, setSaving] = useState(false);
@@ -805,6 +818,9 @@ export default function App() {
             setScreen("unauthorized");
             return;
           }
+          const authData = authSnap.docs[0].data();
+          setUserRol(authData.rol || "usuario");
+          setUserNombre(authData.nombre || "");
           const snap = await getDoc(doc(db, "usuarios", u.uid));
           if (snap.exists()) {
             setAppData({ ...DEFAULT_DATA, ...snap.data() });
@@ -869,7 +885,7 @@ export default function App() {
     <div style={{ minHeight: "100vh", background: C.bg, fontFamily: "'Georgia', serif", color: C.text, maxWidth: 480, margin: "0 auto" }}>
       {saving && <div style={{ position: "fixed", top: 12, right: 16, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 99, padding: "6px 14px", fontSize: 11, color: C.muted, zIndex: 50 }}>Guardando...</div>}
       <div style={{ padding: "28px 22px 96px" }}>
-        {tab === "dashboard" && <DashboardTab user={user} data={appData} onSignOut={handleSignOut} />}
+        {tab === "dashboard" && <DashboardTab user={user} data={appData} onSignOut={handleSignOut} rol={userRol} nombre={userNombre} />}
         {tab === "deudas" && <DeudasTab data={appData} onChange={setAppData} />}
         {tab === "presupuesto" && <PresupuestoTab data={appData} onChange={setAppData} />}
         {tab === "hormiga" && <HormigaTab data={appData} onChange={setAppData} />}
