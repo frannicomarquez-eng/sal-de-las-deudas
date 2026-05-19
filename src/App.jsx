@@ -14,6 +14,10 @@ import {
   doc,
   setDoc,
   getDoc,
+  collection,
+  query,
+  where,
+  getDocs,
 } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -764,6 +768,22 @@ function MetasTab({ data, onChange }) {
   );
 }
 
+function UnauthorizedScreen({ email, onBack }) {
+  return (
+    <div style={{ minHeight: "100vh", background: C.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "'Georgia', serif", padding: "24px 20px" }}>
+      <div style={{ width: 72, height: 72, background: C.gold + "18", border: `1px solid ${C.gold}44`, borderRadius: 20, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36, marginBottom: 24 }}>⏳</div>
+      <h1 style={{ color: C.text, fontSize: 22, fontWeight: 900, margin: "0 0 12px", textAlign: "center" }}>Estás en la lista de espera</h1>
+      <p style={{ color: C.textSoft, fontSize: 14, lineHeight: 1.7, textAlign: "center", maxWidth: 320, margin: "0 0 8px" }}>
+        Tu cuenta <span style={{ color: C.gold, fontWeight: 700 }}>{email}</span> todavía no tiene acceso a Sal de las Deudas.
+      </p>
+      <p style={{ color: C.muted, fontSize: 13, lineHeight: 1.7, textAlign: "center", maxWidth: 320, margin: "0 0 32px" }}>
+        Escribinos para solicitar acceso y te avisamos cuando esté listo.
+      </p>
+      <button onClick={onBack} style={{ background: "none", border: `1px solid ${C.borderLight}`, borderRadius: 12, color: C.muted, padding: "12px 24px", cursor: "pointer", fontFamily: "inherit", fontSize: 14 }}>← Volver al inicio</button>
+    </div>
+  );
+}
+
 export default function App() {
   const [screen, setScreen] = useState("loading");
   const [user, setUser] = useState(null);
@@ -777,6 +797,14 @@ export default function App() {
       setUser(u);
       if (u) {
         try {
+          // Verificar si el email está autorizado
+          const authSnap = await getDocs(query(collection(db, "autorizados"), where("email", "==", u.email)));
+          if (authSnap.empty) {
+            await signOut(auth);
+            setUser(null);
+            setScreen("unauthorized");
+            return;
+          }
           const snap = await getDoc(doc(db, "usuarios", u.uid));
           if (snap.exists()) {
             setAppData({ ...DEFAULT_DATA, ...snap.data() });
@@ -788,7 +816,7 @@ export default function App() {
         } catch (e) {
           setScreen("app");
         }
-      } else {
+      } else if (screen !== "unauthorized") {
         setScreen("slides");
       }
     });
@@ -832,6 +860,7 @@ export default function App() {
     );
   }
 
+  if (screen === "unauthorized") return <UnauthorizedScreen email={user?.email || ""} onBack={() => setScreen("slides")} />;
   if (screen === "slides") return <SlidesScreen onDone={() => setScreen("login")} />;
   if (screen === "login") return <LoginScreen onAuth={handleAuth} />;
   if (screen === "wizard") return <WizardScreen user={user} onDone={handleWizardDone} />;
