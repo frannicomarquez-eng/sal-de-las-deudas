@@ -3,8 +3,7 @@ import { initializeApp } from "firebase/app";
 import {
   getAuth,
   GoogleAuthProvider,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
@@ -214,11 +213,10 @@ function LoginScreen({ onAuth }) {
   const handleGoogle = async () => {
     setGLoading(true); setError("");
     try {
-      sessionStorage.setItem("googleRedirectPending", "1");
-      await signInWithRedirect(auth, googleProvider);
+      await signInWithPopup(auth, googleProvider);
+      onAuth(); // muestra spinner mientras onAuthStateChanged procesa
     } catch (e) {
-      sessionStorage.removeItem("googleRedirectPending");
-      setError(errMsg(e.code));
+      if (e.code !== "auth/popup-closed-by-user") setError(errMsg(e.code));
       setGLoading(false);
     }
   };
@@ -872,67 +870,32 @@ export default function App() {
   const [tab, setTab] = useState("dashboard");
   const [saving, setSaving] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
-  const processing = useRef(false);
 
-  // onAuthStateChanged es la ÚNICA fuente de verdad para transiciones de pantalla
   useEffect(() => {
-    let unsub;
-
-    const processAuthUser = async (u) => {
-      const authSnap = await getDocs(query(collection(db, "autorizados"), where("email", "==", u.email)));
-      if (authSnap.empty) {
-        await signOut(auth);
-        setUser(null);
-        setScreen("unauthorized");
-        return;
-      }
-      const authData = authSnap.docs[0].data();
-      setUserRol(authData.rol || "usuario");
-      setUserNombre(authData.nombre || "");
-      setUser(u);
-      const snap = await getDoc(doc(db, "usuarios", u.uid));
-      if (snap.exists()) setAppData({ ...DEFAULT_DATA, ...snap.data() });
-      else setIsNewUser(true);
-      setScreen(snap.exists() ? "app" : "wizard");
-    };
-
-    const handleAuthState = async (u) => {
-      if (processing.current) return;
-      processing.current = true;
+    const unsub = onAuthStateChanged(auth, async (u) => {
+      if (!u) { setScreen("slides"); return; }
       try {
-        if (u) {
-          sessionStorage.removeItem("googleRedirectPending");
-          await processAuthUser(u);
-        } else if (sessionStorage.getItem("googleRedirectPending")) {
-          // Puede haber un redirect pendiente — esperar getRedirectResult
-          try {
-            const result = await getRedirectResult(auth);
-            const userToProcess = result?.user || auth.currentUser;
-            if (userToProcess) {
-              sessionStorage.removeItem("googleRedirectPending");
-              await processAuthUser(userToProcess);
-            } else {
-              sessionStorage.removeItem("googleRedirectPending");
-              setScreen("slides");
-            }
-          } catch (e) {
-            sessionStorage.removeItem("googleRedirectPending");
-            setScreen("slides");
-          }
-        } else {
-          setScreen("slides");
+        const authSnap = await getDocs(query(collection(db, "autorizados"), where("email", "==", u.email)));
+        if (authSnap.empty) {
+          await signOut(auth);
+          setUser(null);
+          setScreen("unauthorized");
+          return;
         }
+        const authData = authSnap.docs[0].data();
+        setUserRol(authData.rol || "usuario");
+        setUserNombre(authData.nombre || "");
+        setUser(u);
+        const snap = await getDoc(doc(db, "usuarios", u.uid));
+        if (snap.exists()) setAppData({ ...DEFAULT_DATA, ...snap.data() });
+        else setIsNewUser(true);
+        setScreen(snap.exists() ? "app" : "wizard");
       } catch (e) {
-        if (u) { setUser(u); setScreen("app"); }
-        else setScreen("slides");
-      } finally {
-        processing.current = false;
+        setUser(u);
+        setScreen("app");
       }
-    };
-
-    unsub = onAuthStateChanged(auth, handleAuthState);
-
-    return () => unsub?.();
+    });
+    return unsub;
   }, []);
 
   useEffect(() => {
@@ -945,10 +908,7 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [appData, user]);
 
-  // Después del popup o email login: mostrar spinner mientras onAuthStateChanged procesa
-  const handleAuth = () => {
-    setScreen("loading");
-  };
+  const handleAuth = () => setScreen("loading");
 
   const handleWizardDone = (data) => {
     setAppData(data);
@@ -957,7 +917,6 @@ export default function App() {
   };
 
   const handleSignOut = () => {
-    processing.current = false; // permitir que onAuthStateChanged procese el null del signOut
     signOut(auth);
     setUser(null);
     setAppData(DEFAULT_DATA);
