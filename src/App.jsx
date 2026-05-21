@@ -214,8 +214,10 @@ function LoginScreen({ onAuth }) {
   const handleGoogle = async () => {
     setGLoading(true); setError("");
     try {
+      sessionStorage.setItem("googleRedirectPending", "1");
       await signInWithRedirect(auth, googleProvider);
     } catch (e) {
+      sessionStorage.removeItem("googleRedirectPending");
       setError(errMsg(e.code));
       setGLoading(false);
     }
@@ -881,6 +883,7 @@ export default function App() {
       processing.current = true;
       try {
         if (u) {
+          sessionStorage.removeItem("googleRedirectPending");
           const authSnap = await getDocs(query(collection(db, "autorizados"), where("email", "==", u.email)));
           if (authSnap.empty) {
             await signOut(auth);
@@ -900,6 +903,8 @@ export default function App() {
           }
           setScreen(snap.exists() ? "app" : "wizard");
         } else {
+          // Si hay un redirect de Google pendiente, quedarse en loading hasta que llegue el usuario
+          if (sessionStorage.getItem("googleRedirectPending")) return;
           setScreen("slides");
         }
       } catch (e) {
@@ -910,13 +915,16 @@ export default function App() {
       }
     };
 
-    // Esperar resultado del redirect antes de suscribirse a onAuthStateChanged
-    // Esto evita el doble disparo null→user que causa la pantalla en blanco
+    // getRedirectResult procesa el resultado del redirect de Google
     getRedirectResult(auth)
-      .catch(() => {})
-      .finally(() => {
-        unsub = onAuthStateChanged(auth, handleAuthState);
+      .then(result => {
+        if (!result) sessionStorage.removeItem("googleRedirectPending");
+      })
+      .catch(() => {
+        sessionStorage.removeItem("googleRedirectPending");
       });
+
+    unsub = onAuthStateChanged(auth, handleAuthState);
 
     return () => unsub?.();
   }, []);
