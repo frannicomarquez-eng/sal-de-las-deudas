@@ -3,7 +3,8 @@ import { initializeApp } from "firebase/app";
 import {
   getAuth,
   GoogleAuthProvider,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
@@ -213,10 +214,9 @@ function LoginScreen({ onAuth }) {
   const handleGoogle = async () => {
     setGLoading(true); setError("");
     try {
-      await signInWithPopup(auth, googleProvider);
-      onAuth(); // muestra spinner; onAuthStateChanged toma el control
+      await signInWithRedirect(auth, googleProvider);
     } catch (e) {
-      if (e.code !== "auth/popup-closed-by-user") setError(errMsg(e.code));
+      setError(errMsg(e.code));
       setGLoading(false);
     }
   };
@@ -874,14 +874,16 @@ export default function App() {
 
   // onAuthStateChanged es la ÚNICA fuente de verdad para transiciones de pantalla
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (u) => {
-      if (processing.current) return; // ya hay una verificación en curso, ignorar
+    let unsub;
+
+    const handleAuthState = async (u) => {
+      if (processing.current) return;
       processing.current = true;
       try {
         if (u) {
           const authSnap = await getDocs(query(collection(db, "autorizados"), where("email", "==", u.email)));
           if (authSnap.empty) {
-            await signOut(auth); // dispara onAuthStateChanged con null, pero processing=true lo ignora
+            await signOut(auth);
             setUser(null);
             setScreen("unauthorized");
             return;
@@ -906,8 +908,17 @@ export default function App() {
       } finally {
         processing.current = false;
       }
-    });
-    return unsub;
+    };
+
+    // Esperar resultado del redirect antes de suscribirse a onAuthStateChanged
+    // Esto evita el doble disparo null→user que causa la pantalla en blanco
+    getRedirectResult(auth)
+      .catch(() => {})
+      .finally(() => {
+        unsub = onAuthStateChanged(auth, handleAuthState);
+      });
+
+    return () => unsub?.();
   }, []);
 
   useEffect(() => {
