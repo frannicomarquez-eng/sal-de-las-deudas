@@ -18,6 +18,8 @@ import {
   query,
   where,
   getDocs,
+  addDoc,
+  deleteDoc,
 } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -795,6 +797,71 @@ function UnauthorizedScreen({ email, onBack }) {
   );
 }
 
+function AdminTab() {
+  const [usuarios, setUsuarios] = useState([]);
+  const [form, setForm] = useState({ email: "", nombre: "", rol: "usuario" });
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  const cargarUsuarios = async () => {
+    const snap = await getDocs(collection(db, "autorizados"));
+    setUsuarios(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+  };
+
+  useEffect(() => { cargarUsuarios(); }, []);
+
+  const agregar = async () => {
+    if (!form.email || !form.nombre) { setMsg("Completá email y nombre."); return; }
+    setLoading(true); setMsg("");
+    try {
+      await addDoc(collection(db, "autorizados"), { email: form.email.trim().toLowerCase(), nombre: form.nombre.trim(), rol: form.rol });
+      setForm({ email: "", nombre: "", rol: "usuario" });
+      setMsg("✓ Usuario agregado");
+      await cargarUsuarios();
+    } catch (e) { setMsg("Error al agregar."); }
+    setLoading(false);
+  };
+
+  const eliminar = async (id, email) => {
+    if (!confirm(`¿Eliminar acceso de ${email}?`)) return;
+    await deleteDoc(doc(db, "autorizados", id));
+    await cargarUsuarios();
+  };
+
+  return (
+    <div>
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ color: C.gold, fontSize: 10, fontWeight: 700, letterSpacing: 2.5, marginBottom: 6 }}>ADMIN</div>
+        <h2 style={{ color: C.text, fontSize: 22, fontWeight: 900, margin: "0 0 6px" }}>Usuarios Autorizados</h2>
+      </div>
+      <Card style={{ marginBottom: 20 }}>
+        <div style={{ color: C.muted, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 16 }}>DAR ACCESO A ALGUIEN</div>
+        <Inp label="Gmail" value={form.email} onChange={v => setForm({ ...form, email: v })} prefix="" type="email" placeholder="persona@gmail.com" />
+        <Inp label="Nombre" value={form.nombre} onChange={v => setForm({ ...form, nombre: v })} prefix="" type="text" placeholder="Ej: María" />
+        <Sel label="Rol" value={form.rol} onChange={v => setForm({ ...form, rol: v })} options={[{ value: "usuario", label: "Usuario" }, { value: "beta", label: "Beta" }, { value: "admin", label: "Admin" }]} />
+        {msg && <div style={{ color: msg.startsWith("✓") ? C.green : C.red, fontSize: 13, marginBottom: 12 }}>{msg}</div>}
+        <Btn onClick={agregar} disabled={loading}>{loading ? "Guardando..." : "+ Dar acceso"}</Btn>
+      </Card>
+      <Card>
+        <div style={{ color: C.muted, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 16 }}>ACCESOS ACTIVOS ({usuarios.length})</div>
+        {usuarios.length === 0 && <div style={{ color: C.muted, fontSize: 13, textAlign: "center", padding: "20px 0" }}>No hay usuarios aún</div>}
+        {usuarios.map(u => (
+          <div key={u.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: `1px solid ${C.border}` }}>
+            <div>
+              <div style={{ color: C.text, fontWeight: 700, fontSize: 14 }}>{u.nombre}</div>
+              <div style={{ color: C.muted, fontSize: 12, marginTop: 2 }}>{u.email}</div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <Pill color={ROL_CONFIG[u.rol]?.color || C.blue}>{(u.rol || "usuario").toUpperCase()}</Pill>
+              <button onClick={() => eliminar(u.id, u.email)} style={{ background: "none", border: "none", color: C.red, cursor: "pointer", fontSize: 20 }}>×</button>
+            </div>
+          </div>
+        ))}
+      </Card>
+    </div>
+  );
+}
+
 export default function App() {
   const [screen, setScreen] = useState("loading");
   const [user, setUser] = useState(null);
@@ -897,9 +964,10 @@ export default function App() {
         {tab === "presupuesto" && <PresupuestoTab data={appData} onChange={setAppData} />}
         {tab === "hormiga" && <HormigaTab data={appData} onChange={setAppData} />}
         {tab === "metas" && <MetasTab data={appData} onChange={setAppData} />}
+        {tab === "admin" && <AdminTab />}
       </div>
       <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, background: C.surface, borderTop: `1px solid ${C.border}`, display: "flex", padding: "10px 0 18px" }}>
-        {TABS.map((t) => (
+        {[...TABS, ...(userRol === "admin" ? [{ id: "admin", label: "Admin", icon: "⚙️" }] : [])].map((t) => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "4px 0" }}>
             <div style={{ width: 40, height: 36, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: tab === t.id ? C.gold + "22" : "transparent", transition: "all 0.2s" }}>
               <span style={{ fontSize: tab === t.id ? 22 : 19 }}>{t.icon}</span>
