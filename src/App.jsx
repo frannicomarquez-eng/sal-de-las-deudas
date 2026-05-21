@@ -878,51 +878,57 @@ export default function App() {
   useEffect(() => {
     let unsub;
 
+    const processAuthUser = async (u) => {
+      const authSnap = await getDocs(query(collection(db, "autorizados"), where("email", "==", u.email)));
+      if (authSnap.empty) {
+        await signOut(auth);
+        setUser(null);
+        setScreen("unauthorized");
+        return;
+      }
+      const authData = authSnap.docs[0].data();
+      setUserRol(authData.rol || "usuario");
+      setUserNombre(authData.nombre || "");
+      setUser(u);
+      const snap = await getDoc(doc(db, "usuarios", u.uid));
+      if (snap.exists()) setAppData({ ...DEFAULT_DATA, ...snap.data() });
+      else setIsNewUser(true);
+      setScreen(snap.exists() ? "app" : "wizard");
+    };
+
     const handleAuthState = async (u) => {
       if (processing.current) return;
       processing.current = true;
       try {
         if (u) {
           sessionStorage.removeItem("googleRedirectPending");
-          const authSnap = await getDocs(query(collection(db, "autorizados"), where("email", "==", u.email)));
-          if (authSnap.empty) {
-            await signOut(auth);
-            setUser(null);
-            setScreen("unauthorized");
-            return;
+          await processAuthUser(u);
+        } else if (sessionStorage.getItem("googleRedirectPending")) {
+          // Puede haber un redirect pendiente — esperar getRedirectResult
+          try {
+            const result = await getRedirectResult(auth);
+            const userToProcess = result?.user || auth.currentUser;
+            if (userToProcess) {
+              sessionStorage.removeItem("googleRedirectPending");
+              await processAuthUser(userToProcess);
+            } else {
+              sessionStorage.removeItem("googleRedirectPending");
+              setScreen("slides");
+            }
+          } catch (e) {
+            sessionStorage.removeItem("googleRedirectPending");
+            setScreen("slides");
           }
-          const authData = authSnap.docs[0].data();
-          setUserRol(authData.rol || "usuario");
-          setUserNombre(authData.nombre || "");
-          setUser(u);
-          const snap = await getDoc(doc(db, "usuarios", u.uid));
-          if (snap.exists()) {
-            setAppData({ ...DEFAULT_DATA, ...snap.data() });
-          } else {
-            setIsNewUser(true);
-          }
-          setScreen(snap.exists() ? "app" : "wizard");
         } else {
-          // Si hay un redirect de Google pendiente, quedarse en loading hasta que llegue el usuario
-          if (sessionStorage.getItem("googleRedirectPending")) return;
           setScreen("slides");
         }
       } catch (e) {
-        setUser(u);
-        setScreen("app");
+        if (u) { setUser(u); setScreen("app"); }
+        else setScreen("slides");
       } finally {
         processing.current = false;
       }
     };
-
-    // getRedirectResult procesa el resultado del redirect de Google
-    getRedirectResult(auth)
-      .then(result => {
-        if (!result) sessionStorage.removeItem("googleRedirectPending");
-      })
-      .catch(() => {
-        sessionStorage.removeItem("googleRedirectPending");
-      });
 
     unsub = onAuthStateChanged(auth, handleAuthState);
 
