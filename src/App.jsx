@@ -213,8 +213,8 @@ function LoginScreen({ onAuth }) {
   const handleGoogle = async () => {
     setGLoading(true); setError("");
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      await onAuth(result.user);
+      await signInWithPopup(auth, googleProvider);
+      onAuth(); // muestra spinner; onAuthStateChanged toma el control
     } catch (e) {
       if (e.code !== "auth/popup-closed-by-user") setError(errMsg(e.code));
       setGLoading(false);
@@ -870,44 +870,41 @@ export default function App() {
   const [tab, setTab] = useState("dashboard");
   const [saving, setSaving] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
-  const sessionReady = useRef(false);
+  const processing = useRef(false);
 
-  // Función central: verifica autorización y carga datos del usuario
-  const processUser = async (u) => {
-    try {
-      const authSnap = await getDocs(query(collection(db, "autorizados"), where("email", "==", u.email)));
-      if (authSnap.empty) {
-        await signOut(auth);
-        setUser(null);
-        setScreen("unauthorized");
-        return;
-      }
-      const authData = authSnap.docs[0].data();
-      setUserRol(authData.rol || "usuario");
-      setUserNombre(authData.nombre || "");
-      setUser(u);
-      const snap = await getDoc(doc(db, "usuarios", u.uid));
-      if (snap.exists()) {
-        setAppData({ ...DEFAULT_DATA, ...snap.data() });
-      } else {
-        setIsNewUser(true);
-      }
-      setScreen(snap.exists() ? "app" : "wizard");
-    } catch (e) {
-      setUser(u);
-      setScreen("app");
-    }
-  };
-
-  // Solo maneja la carga inicial (cuando no hay sesión activa todavía)
+  // onAuthStateChanged es la ÚNICA fuente de verdad para transiciones de pantalla
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
-      if (sessionReady.current) return; // ya manejado por handleAuth o handleSignOut
-      sessionReady.current = true;
-      if (u) {
-        processUser(u); // sesión guardada de una visita anterior
-      } else {
-        setScreen("slides"); // sin sesión, mostrar slides
+    const unsub = onAuthStateChanged(auth, async (u) => {
+      if (processing.current) return; // ya hay una verificación en curso, ignorar
+      processing.current = true;
+      try {
+        if (u) {
+          const authSnap = await getDocs(query(collection(db, "autorizados"), where("email", "==", u.email)));
+          if (authSnap.empty) {
+            await signOut(auth); // dispara onAuthStateChanged con null, pero processing=true lo ignora
+            setUser(null);
+            setScreen("unauthorized");
+            return;
+          }
+          const authData = authSnap.docs[0].data();
+          setUserRol(authData.rol || "usuario");
+          setUserNombre(authData.nombre || "");
+          setUser(u);
+          const snap = await getDoc(doc(db, "usuarios", u.uid));
+          if (snap.exists()) {
+            setAppData({ ...DEFAULT_DATA, ...snap.data() });
+          } else {
+            setIsNewUser(true);
+          }
+          setScreen(snap.exists() ? "app" : "wizard");
+        } else {
+          setScreen("slides");
+        }
+      } catch (e) {
+        setUser(u);
+        setScreen("app");
+      } finally {
+        processing.current = false;
       }
     });
     return unsub;
@@ -923,9 +920,9 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [appData, user]);
 
-  const handleAuth = async (firebaseUser) => {
-    sessionReady.current = true; // bloquear onAuthStateChanged para evitar doble procesamiento
-    await processUser(firebaseUser);
+  // Después del popup o email login: mostrar spinner mientras onAuthStateChanged procesa
+  const handleAuth = () => {
+    setScreen("loading");
   };
 
   const handleWizardDone = (data) => {
@@ -935,11 +932,10 @@ export default function App() {
   };
 
   const handleSignOut = () => {
-    sessionReady.current = false; // permitir que onAuthStateChanged corra de nuevo si vuelve a loguearse
+    processing.current = false; // permitir que onAuthStateChanged procese el null del signOut
     signOut(auth);
     setUser(null);
     setAppData(DEFAULT_DATA);
-    setScreen("slides");
   };
 
   if (screen === "loading") {
