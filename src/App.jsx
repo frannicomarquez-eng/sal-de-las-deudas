@@ -214,7 +214,6 @@ function LoginScreen({ onAuth }) {
     setGLoading(true); setError("");
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      sessionReady.current = true; // evitar que onAuthStateChanged interfiera
       await onAuth(result.user);
     } catch (e) {
       if (e.code !== "auth/popup-closed-by-user") setError(errMsg(e.code));
@@ -900,15 +899,15 @@ export default function App() {
     }
   };
 
-  // Solo maneja la sesión previa al abrir la app (refresh de página)
+  // Solo maneja la carga inicial (cuando no hay sesión activa todavía)
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
-      if (sessionReady.current) return;
+      if (sessionReady.current) return; // ya manejado por handleAuth o handleSignOut
       sessionReady.current = true;
       if (u) {
-        processUser(u);
+        processUser(u); // sesión guardada de una visita anterior
       } else {
-        setScreen("slides");
+        setScreen("slides"); // sin sesión, mostrar slides
       }
     });
     return unsub;
@@ -925,6 +924,7 @@ export default function App() {
   }, [appData, user]);
 
   const handleAuth = async (firebaseUser) => {
+    sessionReady.current = true; // bloquear onAuthStateChanged para evitar doble procesamiento
     await processUser(firebaseUser);
   };
 
@@ -935,6 +935,7 @@ export default function App() {
   };
 
   const handleSignOut = () => {
+    sessionReady.current = false; // permitir que onAuthStateChanged corra de nuevo si vuelve a loguearse
     signOut(auth);
     setUser(null);
     setAppData(DEFAULT_DATA);
