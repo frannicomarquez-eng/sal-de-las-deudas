@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Calculadora de Bienestar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0b0f0d;
+    --surface: #111813;
+    --card: #141d17;
+    --border: #223028;
+    --border-light: #2c3c32;
+    --text: #eef5f0;
+    --text-soft: #a3b3ab;
+    --muted: #6b7b73;
+    --green: #22e07a;
+    --green-dark: #16a34a;
+    --green-glow: rgba(34, 224, 122, 0.18);
+    --warn: #f0b429;
+    --danger: #f0554a;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100svh;
+    background: radial-gradient(circle at 50% -10%, rgba(34, 224, 122, 0.12) 0%, transparent 55%), var(--bg);
+    color: var(--text);
+    font-family: 'Poppins', system-ui, sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 40px 16px 60px;
+  }
+
+  .wrap { width: 100%; max-width: 480px; }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 8px;
+  }
+
+  .brand .icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    background: var(--green-glow);
+    border: 1px solid rgba(34, 224, 122, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+  }
+
+  h1 {
+    font-size: 24px;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: -0.3px;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: var(--text-soft);
+    font-size: 14px;
+    margin: 6px 0 28px;
+    line-height: 1.5;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    padding: 28px 24px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  }
+
+  .field { margin-bottom: 16px; }
+
+  label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--text-soft);
+    margin-bottom: 7px;
+  }
+
+  input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    padding: 13px 14px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  input::placeholder { color: var(--muted); }
+
+  input:focus {
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px var(--green-glow);
+  }
+
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .error {
+    color: var(--danger);
+    font-size: 12px;
+    margin-top: -10px;
+    margin-bottom: 16px;
+    min-height: 16px;
+  }
+
+  button.primary {
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--green) 0%, var(--green-dark) 100%);
+    color: #072311;
+    font-weight: 800;
+    font-size: 15px;
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: 0 8px 24px var(--green-glow);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  button.primary:hover { transform: translateY(-1px); box-shadow: 0 12px 30px var(--green-glow); }
+  button.primary:active { transform: translateY(0); }
+
+  #resultados {
+    margin-top: 28px;
+    display: none;
+  }
+
+  #resultados.visible {
+    display: block;
+    animation: fadeUp 0.5s ease;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .greeting {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .greeting .hi { color: var(--green); font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+  .greeting h2 { margin: 6px 0 0; font-size: 20px; font-weight: 800; }
+
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px 20px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .stat .emoji {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: var(--green-glow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  .stat .info { flex: 1; }
+  .stat .label { color: var(--text-soft); font-size: 12px; font-weight: 600; }
+  .stat .value { font-size: 19px; font-weight: 800; margin-top: 2px; }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+  }
+
+  .badge.bajo { background: rgba(74, 174, 212, 0.18); color: #4aaed4; }
+  .badge.normal { background: rgba(34, 224, 122, 0.18); color: var(--green); }
+  .badge.sobrepeso { background: rgba(240, 85, 74, 0.18); color: var(--danger); }
+
+  .cta {
+    display: block;
+    width: 100%;
+    text-align: center;
+    text-decoration: none;
+    margin-top: 22px;
+    padding: 16px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #25d366 0%, #128c4a 100%);
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 15px;
+    box-shadow: 0 10px 28px rgba(37, 211, 102, 0.35);
+    transition: transform 0.15s;
+  }
+
+  .cta:hover { transform: translateY(-1px); }
+  .cta .wa-icon { margin-right: 8px; }
+
+  .disclaimer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 24px;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="brand">
+      <div class="icon">🌿</div>
+      <h1>Calculadora de Bienestar</h1>
+    </div>
+    <p class="subtitle">Ingresá tus datos y descubrí tu perfil de salud en segundos.</p>
+
+    <div class="card">
+      <form id="wellness-form" novalidate>
+        <div class="field">
+          <label for="nombre">Nombre</label>
+          <input type="text" id="nombre" name="nombre" placeholder="¿Cómo te llamás?" autocomplete="name" required />
+        </div>
+        <div class="field">
+          <label for="edad">Edad (años)</label>
+          <input type="number" id="edad" name="edad" placeholder="Ej: 32" min="1" max="120" inputmode="numeric" required />
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="peso">Peso (kg)</label>
+            <input type="number" id="peso" name="peso" placeholder="Ej: 78" min="1" max="400" step="0.1" inputmode="decimal" required />
+          </div>
+          <div class="field">
+            <label for="altura">Altura (cm)</label>
+            <input type="number" id="altura" name="altura" placeholder="Ej: 175" min="50" max="250" step="0.1" inputmode="decimal" required />
+          </div>
+        </div>
+        <div class="error" id="form-error"></div>
+        <button type="submit" class="primary">Calcular mi perfil</button>
+      </form>
+
+      <div id="resultados">
+        <div class="greeting">
+          <div class="hi">Tu perfil de bienestar</div>
+          <h2 id="saludo">¡Hola!</h2>
+        </div>
+
+        <div class="stat">
+          <div class="emoji">⚖️</div>
+          <div class="info">
+            <div class="label">Índice de Masa Corporal (IMC)</div>
+            <div class="value" id="imc-valor">--</div>
+            <span class="badge" id="imc-badge"></span>
+          </div>
+        </div>
+
+        <div class="stat">
+          <div class="emoji">🍗</div>
+          <div class="info">
+            <div class="label">Proteína diaria sugerida</div>
+            <div class="value" id="proteina-valor">--</div>
+          </div>
+        </div>
+
+        <div class="stat">
+          <div class="emoji">💧</div>
+          <div class="info">
+            <div class="label">Agua sugerida por día</div>
+            <div class="value" id="agua-valor">--</div>
+          </div>
+        </div>
+
+        <a href="#" target="_blank" rel="noopener" class="cta" id="cta-whatsapp">
+          <span class="wa-icon">💬</span>Quiero un plan personalizado para lograrlo
+        </a>
+      </div>
+    </div>
+
+    <p class="disclaimer">Esta calculadora ofrece valores orientativos y no reemplaza el consejo de un profesional de la salud.</p>
+  </div>
+
+<script>
+  // Reemplazá este número por el WhatsApp real del negocio (código de país + número, sin '+' ni espacios).
+  const WHATSAPP_NUMBER = "5491122334455";
+
+  const form = document.getElementById("wellness-form");
+  const errorEl = document.getElementById("form-error");
+  const resultados = document.getElementById("resultados");
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    errorEl.textContent = "";
+
+    const nombre = document.getElementById("nombre").value.trim();
+    const edad = parseFloat(document.getElementById("edad").value);
+    const peso = parseFloat(document.getElementById("peso").value);
+    const altura = parseFloat(document.getElementById("altura").value);
+
+    if (!nombre || !edad || !peso || !altura || edad <= 0 || peso <= 0 || altura <= 0) {
+      errorEl.textContent = "Completá todos los campos con valores válidos.";
+      resultados.classList.remove("visible");
+      return;
+    }
+
+    const alturaMts = altura / 100;
+    const imc = peso / (alturaMts * alturaMts);
+    const proteina = peso * 1.5;
+    const agua = peso * 0.04;
+
+    let categoria, badgeClass;
+    if (imc < 18.5) {
+      categoria = "Bajo peso";
+      badgeClass = "bajo";
+    } else if (imc < 25) {
+      categoria = "Normal";
+      badgeClass = "normal";
+    } else {
+      categoria = "Sobrepeso";
+      badgeClass = "sobrepeso";
+    }
+
+    const imcTxt = imc.toFixed(1);
+    const proteinaTxt = proteina.toFixed(0) + " g";
+    const aguaTxt = agua.toFixed(1) + " L";
+
+    document.getElementById("saludo").textContent = "¡Hola, " + nombre + "!";
+    document.getElementById("imc-valor").textContent = imcTxt;
+    const badge = document.getElementById("imc-badge");
+    badge.textContent = categoria;
+    badge.className = "badge " + badgeClass;
+    document.getElementById("proteina-valor").textContent = proteinaTxt;
+    document.getElementById("agua-valor").textContent = aguaTxt;
+
+    const mensaje =
+      "Hola! Soy " + nombre + " (" + edad + " años). Calculé mi perfil de bienestar:\n" +
+      "- IMC: " + imcTxt + " (" + categoria + ")\n" +
+      "- Proteína diaria sugerida: " + proteinaTxt + "\n" +
+      "- Agua sugerida: " + aguaTxt + "\n" +
+      "Quiero un plan personalizado para lograrlo.";
+
+    document.getElementById("cta-whatsapp").href =
+      "https://wa.me/" + WHATSAPP_NUMBER + "?text=" + encodeURIComponent(mensaje);
+
+    resultados.classList.add("visible");
+    resultados.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  });
+</script>
+</body>
+</html>
