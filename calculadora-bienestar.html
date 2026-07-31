@@ -204,7 +204,8 @@
 
   .badge.bajo { background: rgba(74, 174, 212, 0.18); color: #4aaed4; }
   .badge.normal { background: rgba(34, 224, 122, 0.18); color: var(--green); }
-  .badge.sobrepeso { background: rgba(240, 85, 74, 0.18); color: var(--danger); }
+  .badge.sobrepeso { background: rgba(240, 180, 41, 0.18); color: var(--warn); }
+  .badge.obesidad { background: rgba(240, 85, 74, 0.18); color: var(--danger); }
 
   .cta {
     display: block;
@@ -258,8 +259,8 @@
             <input type="number" id="peso" name="peso" placeholder="Ej: 78" min="1" max="400" step="0.1" inputmode="decimal" required />
           </div>
           <div class="field">
-            <label for="altura">Altura (cm)</label>
-            <input type="number" id="altura" name="altura" placeholder="Ej: 175" min="50" max="250" step="0.1" inputmode="decimal" required />
+            <label for="altura">Altura (cm o m)</label>
+            <input type="text" id="altura" name="altura" placeholder="Ej: 175 o 1,75" inputmode="decimal" required />
           </div>
         </div>
         <div class="error" id="form-error"></div>
@@ -321,15 +322,26 @@
     const nombre = document.getElementById("nombre").value.trim();
     const edad = parseFloat(document.getElementById("edad").value);
     const peso = parseFloat(document.getElementById("peso").value);
-    const altura = parseFloat(document.getElementById("altura").value);
+    const alturaRaw = parseFloat(document.getElementById("altura").value.replace(",", "."));
 
-    if (!nombre || !edad || !peso || !altura || edad <= 0 || peso <= 0 || altura <= 0) {
+    if (!nombre || !edad || !peso || !alturaRaw || edad <= 0 || peso <= 0 || alturaRaw <= 0) {
       errorEl.textContent = "Completá todos los campos con valores válidos.";
       resultados.classList.remove("visible");
       return;
     }
 
-    const alturaMts = altura / 100;
+    // Altura inteligente: menor a 3 se interpreta en metros (ej: 1,60), mayor a 50 en centímetros (ej: 160).
+    let alturaMts;
+    if (alturaRaw < 3) {
+      alturaMts = alturaRaw;
+    } else if (alturaRaw >= 50) {
+      alturaMts = alturaRaw / 100;
+    } else {
+      errorEl.textContent = "Ingresá una altura válida en centímetros (ej: 175) o metros (ej: 1,75).";
+      resultados.classList.remove("visible");
+      return;
+    }
+
     const imc = peso / (alturaMts * alturaMts);
     const proteina = peso * 1.5;
     const agua = peso * 0.04;
@@ -341,9 +353,12 @@
     } else if (imc < 25) {
       categoria = "Normal";
       badgeClass = "normal";
-    } else {
+    } else if (imc < 30) {
       categoria = "Sobrepeso";
       badgeClass = "sobrepeso";
+    } else {
+      categoria = "Obesidad";
+      badgeClass = "obesidad";
     }
 
     const imcTxt = imc.toFixed(1);
