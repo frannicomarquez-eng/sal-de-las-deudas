@@ -207,6 +207,92 @@
   .badge.sobrepeso { background: rgba(240, 180, 41, 0.18); color: var(--warn); }
   .badge.obesidad { background: rgba(240, 85, 74, 0.18); color: var(--danger); }
 
+  .imc-desc {
+    color: var(--text-soft);
+    font-size: 12px;
+    line-height: 1.5;
+    margin: 8px 0 0;
+  }
+
+  .rango-status {
+    font-size: 12px;
+    font-weight: 700;
+    margin-top: 4px;
+  }
+
+  .rango-status.ok { color: var(--green); }
+  .rango-status.off { color: var(--warn); }
+
+  .gauge { margin-top: 16px; padding-top: 18px; }
+
+  .gauge-track {
+    position: relative;
+    height: 8px;
+  }
+
+  .gauge-track-fill {
+    height: 100%;
+    border-radius: 99px;
+    display: flex;
+    overflow: hidden;
+    background: var(--surface);
+  }
+
+  .gauge-track .seg { height: 100%; flex: 0 0 auto; }
+  .seg.bajo { width: 14%; background: #4aaed4; }
+  .seg.normal { width: 26%; background: var(--green); }
+  .seg.sobrepeso { width: 20%; background: var(--warn); }
+  .seg.obesidad { width: 40%; background: var(--danger); }
+
+  .gauge-marker {
+    position: absolute;
+    top: -16px;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: left 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .gauge-marker .marker-value {
+    font-size: 10px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+    background: var(--card);
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    padding: 1px 6px;
+    margin-bottom: 1px;
+    white-space: nowrap;
+  }
+
+  .gauge-marker .marker-arrow {
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid var(--text);
+  }
+
+  .gauge-scale {
+    position: relative;
+    height: 14px;
+    margin-top: 6px;
+  }
+
+  .gauge-scale span {
+    position: absolute;
+    left: var(--pos);
+    transform: translateX(-50%);
+    font-size: 9px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .gauge-scale span.first { transform: translateX(0); }
+  .gauge-scale span.last { transform: translateX(-100%); }
+
   .cta {
     display: block;
     width: 100%;
@@ -279,6 +365,37 @@
             <div class="label">Índice de Masa Corporal (IMC)</div>
             <div class="value" id="imc-valor">--</div>
             <span class="badge" id="imc-badge"></span>
+            <p class="imc-desc" id="imc-desc"></p>
+            <div class="gauge">
+              <div class="gauge-track">
+                <div class="gauge-marker" id="gauge-marker">
+                  <span class="marker-value" id="gauge-marker-value"></span>
+                  <span class="marker-arrow"></span>
+                </div>
+                <div class="gauge-track-fill">
+                  <span class="seg bajo"></span>
+                  <span class="seg normal"></span>
+                  <span class="seg sobrepeso"></span>
+                  <span class="seg obesidad"></span>
+                </div>
+              </div>
+              <div class="gauge-scale">
+                <span class="first" style="--pos: 0%">15</span>
+                <span style="--pos: 14%">18.5</span>
+                <span style="--pos: 40%">25</span>
+                <span style="--pos: 60%">30</span>
+                <span class="last" style="--pos: 100%">40+</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat">
+          <div class="emoji">🎯</div>
+          <div class="info">
+            <div class="label">Tu rango de peso saludable</div>
+            <div class="value" id="rango-valor">--</div>
+            <div class="rango-status" id="rango-status"></div>
           </div>
         </div>
 
@@ -346,6 +463,13 @@
     const proteina = peso * 1.5;
     const agua = peso * 0.04;
 
+    const DESCRIPCIONES = {
+      bajo: "Tu peso está por debajo del rango recomendado para tu altura.",
+      normal: "Tu peso se encuentra dentro del rango saludable para tu altura.",
+      sobrepeso: "Tu peso está por encima del rango saludable recomendado.",
+      obesidad: "Tu IMC indica un peso significativamente por encima del rango saludable.",
+    };
+
     let categoria, badgeClass;
     if (imc < 18.5) {
       categoria = "Bajo peso";
@@ -365,13 +489,42 @@
     const proteinaTxt = proteina.toFixed(0) + " g";
     const aguaTxt = agua.toFixed(1) + " L";
 
+    // Rango de peso saludable para la altura ingresada (IMC 18.5 - 24.9).
+    const pesoMin = 18.5 * alturaMts * alturaMts;
+    const pesoMax = 24.9 * alturaMts * alturaMts;
+    const rangoTxt = pesoMin.toFixed(1) + " kg – " + pesoMax.toFixed(1) + " kg";
+
+    let rangoStatusTxt, rangoStatusClass;
+    if (peso < pesoMin) {
+      rangoStatusTxt = "Te faltan " + (pesoMin - peso).toFixed(1) + " kg para llegar a tu rango saludable.";
+      rangoStatusClass = "off";
+    } else if (peso > pesoMax) {
+      rangoStatusTxt = "Estás " + (peso - pesoMax).toFixed(1) + " kg por encima de tu rango saludable.";
+      rangoStatusClass = "off";
+    } else {
+      rangoStatusTxt = "✓ Estás dentro de tu rango de peso saludable.";
+      rangoStatusClass = "ok";
+    }
+
+    // Posición del marcador en el gauge, sobre una escala visual de IMC 15 a 40.
+    const gaugeMin = 15, gaugeMax = 40;
+    const imcClamped = Math.min(Math.max(imc, gaugeMin), gaugeMax);
+    const gaugePct = ((imcClamped - gaugeMin) / (gaugeMax - gaugeMin)) * 100;
+
     document.getElementById("saludo").textContent = "¡Hola, " + nombre + "!";
     document.getElementById("imc-valor").textContent = imcTxt;
     const badge = document.getElementById("imc-badge");
     badge.textContent = categoria;
     badge.className = "badge " + badgeClass;
+    document.getElementById("imc-desc").textContent = DESCRIPCIONES[badgeClass];
     document.getElementById("proteina-valor").textContent = proteinaTxt;
     document.getElementById("agua-valor").textContent = aguaTxt;
+    document.getElementById("rango-valor").textContent = rangoTxt;
+    const rangoStatus = document.getElementById("rango-status");
+    rangoStatus.textContent = rangoStatusTxt;
+    rangoStatus.className = "rango-status " + rangoStatusClass;
+    document.getElementById("gauge-marker-value").textContent = imcTxt;
+    document.getElementById("gauge-marker").style.left = gaugePct + "%";
 
     const mensaje =
       "Hola! Soy " + nombre + " (" + edad + " años). Calculé mi perfil de bienestar:\n" +
