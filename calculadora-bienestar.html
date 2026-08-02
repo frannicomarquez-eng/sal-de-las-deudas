@@ -136,11 +136,57 @@
     font-family: inherit;
     cursor: pointer;
     box-shadow: 0 8px 24px var(--green-glow);
-    transition: transform 0.15s, box-shadow 0.15s;
+    transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
   }
 
   button.primary:hover { transform: translateY(-1px); box-shadow: 0 12px 30px var(--green-glow); }
   button.primary:active { transform: translateY(0); }
+  button.primary:disabled { opacity: 0.7; cursor: default; transform: none; }
+
+  button.secondary {
+    width: 100%;
+    padding: 12px;
+    margin-top: 8px;
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    background: transparent;
+    color: var(--text-soft);
+    font-weight: 700;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  button.secondary:hover { border-color: var(--green); color: var(--green); }
+
+  .segmented {
+    display: flex;
+    gap: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    padding: 4px;
+  }
+
+  .seg-btn {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-soft);
+    font-weight: 700;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  .seg-btn.active {
+    background: var(--green-glow);
+    color: var(--green);
+  }
 
   #resultados {
     margin-top: 28px;
@@ -339,6 +385,13 @@
           <label for="edad">Edad (años)</label>
           <input type="number" id="edad" name="edad" placeholder="Ej: 32" min="1" max="120" inputmode="numeric" required />
         </div>
+        <div class="field">
+          <label>Sexo</label>
+          <div class="segmented" id="sexo-toggle">
+            <button type="button" class="seg-btn active" data-value="mujer">Mujer</button>
+            <button type="button" class="seg-btn" data-value="hombre">Hombre</button>
+          </div>
+        </div>
         <div class="row">
           <div class="field">
             <label for="peso">Peso (kg)</label>
@@ -415,9 +468,19 @@
           </div>
         </div>
 
+        <div class="stat">
+          <div class="emoji">🔥</div>
+          <div class="info">
+            <div class="label">Calorías diarias sugeridas</div>
+            <div class="value" id="calorias-valor">--</div>
+            <div class="imc-desc">Estimado para mantener tu peso actual con actividad física ligera.</div>
+          </div>
+        </div>
+
         <a href="#" target="_blank" rel="noopener" class="cta" id="cta-whatsapp">
           <span class="wa-icon">💬</span>Quiero un plan personalizado para lograrlo
         </a>
+        <button type="button" class="secondary" id="btn-recalcular">✎ Volver a calcular</button>
       </div>
     </div>
 
@@ -431,6 +494,21 @@
   const form = document.getElementById("wellness-form");
   const errorEl = document.getElementById("form-error");
   const resultados = document.getElementById("resultados");
+  const submitBtn = form.querySelector("button[type=submit]");
+
+  let sexo = "mujer";
+  const sexoToggle = document.getElementById("sexo-toggle");
+  sexoToggle.addEventListener("click", function (e) {
+    const btn = e.target.closest(".seg-btn");
+    if (!btn) return;
+    sexo = btn.dataset.value;
+    sexoToggle.querySelectorAll(".seg-btn").forEach((b) => b.classList.toggle("active", b === btn));
+  });
+
+  document.getElementById("btn-recalcular").addEventListener("click", function () {
+    form.scrollIntoView({ behavior: "smooth", block: "start" });
+    document.getElementById("nombre").focus();
+  });
 
   form.addEventListener("submit", function (e) {
     e.preventDefault();
@@ -459,9 +537,27 @@
       return;
     }
 
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Calculando...";
+
+    setTimeout(function () {
+      calcularYMostrar(nombre, edad, peso, alturaMts);
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Calcular mi perfil";
+    }, 450);
+  });
+
+  function calcularYMostrar(nombre, edad, peso, alturaMts) {
     const imc = peso / (alturaMts * alturaMts);
     const proteina = peso * 1.5;
     const agua = peso * 0.04;
+
+    // Metabolismo basal (Mifflin-St Jeor) + actividad ligera (x1.2) para una estimación de mantenimiento.
+    const alturaCm = alturaMts * 100;
+    const tmb = sexo === "hombre"
+      ? 10 * peso + 6.25 * alturaCm - 5 * edad + 5
+      : 10 * peso + 6.25 * alturaCm - 5 * edad - 161;
+    const calorias = Math.round(tmb * 1.2);
 
     const DESCRIPCIONES = {
       bajo: "Tu peso está por debajo del rango recomendado para tu altura.",
@@ -519,6 +615,7 @@
     document.getElementById("imc-desc").textContent = DESCRIPCIONES[badgeClass];
     document.getElementById("proteina-valor").textContent = proteinaTxt;
     document.getElementById("agua-valor").textContent = aguaTxt;
+    document.getElementById("calorias-valor").textContent = calorias.toLocaleString("es-AR") + " kcal";
     document.getElementById("rango-valor").textContent = rangoTxt;
     const rangoStatus = document.getElementById("rango-status");
     rangoStatus.textContent = rangoStatusTxt;
@@ -531,6 +628,7 @@
       "- IMC: " + imcTxt + " (" + categoria + ")\n" +
       "- Proteína diaria sugerida: " + proteinaTxt + "\n" +
       "- Agua sugerida: " + aguaTxt + "\n" +
+      "- Calorías diarias sugeridas: " + calorias.toLocaleString("es-AR") + " kcal\n" +
       "Quiero un plan personalizado para lograrlo.";
 
     document.getElementById("cta-whatsapp").href =
@@ -538,7 +636,7 @@
 
     resultados.classList.add("visible");
     resultados.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  });
+  }
 </script>
 </body>
 </html>
