@@ -269,12 +269,48 @@
 
   .rango-status {
     font-size: 12px;
-    font-weight: 700;
+    color: var(--text-soft);
     margin-top: 4px;
   }
 
-  .rango-status.ok { color: var(--green); }
-  .rango-status.off { color: var(--warn); }
+  .diff-valor.bajo { color: #4aaed4; }
+  .diff-valor.normal { color: var(--green); }
+  .diff-valor.sobrepeso { color: var(--warn); }
+  .diff-valor.obesidad { color: var(--danger); }
+
+  .risk-panel {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--border-light);
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 12px;
+  }
+
+  .risk-panel.bajo { border-left-color: #4aaed4; }
+  .risk-panel.normal { border-left-color: var(--green); }
+  .risk-panel.sobrepeso { border-left-color: var(--warn); }
+  .risk-panel.obesidad { border-left-color: var(--danger); }
+
+  .risk-panel .risk-icon { font-size: 18px; line-height: 1; margin-top: 1px; }
+
+  .risk-fact {
+    color: var(--text-soft);
+    font-size: 12.5px;
+    line-height: 1.6;
+    margin: 0 0 8px;
+  }
+
+  .risk-motiv {
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.5;
+    margin: 0;
+  }
 
   .gauge { margin-top: 16px; padding-top: 18px; }
 
@@ -467,11 +503,19 @@
           </div>
         </div>
 
+        <div class="risk-panel" id="risk-panel">
+          <span class="risk-icon" id="risk-icon"></span>
+          <div>
+            <p class="risk-fact" id="risk-fact"></p>
+            <p class="risk-motiv" id="risk-motiv"></p>
+          </div>
+        </div>
+
         <div class="stat">
           <div class="emoji">🎯</div>
           <div class="info">
-            <div class="label">Tu rango de peso saludable</div>
-            <div class="value" id="rango-valor">--</div>
+            <div class="label">Diferencia con tu peso saludable</div>
+            <div class="value" id="diferencia-valor">--</div>
             <div class="rango-status" id="rango-status"></div>
           </div>
         </div>
@@ -623,19 +667,39 @@
     // Rango de peso saludable para la altura ingresada (IMC 18.5 - 24.9).
     const pesoMin = 18.5 * alturaMts * alturaMts;
     const pesoMax = 24.9 * alturaMts * alturaMts;
-    const rangoTxt = pesoMin.toFixed(1) + " kg – " + pesoMax.toFixed(1) + " kg";
+    const rangoTxt = "Tu rango saludable: " + pesoMin.toFixed(1) + " kg – " + pesoMax.toFixed(1) + " kg";
 
-    let rangoStatusTxt, rangoStatusClass;
+    let diferenciaTxt;
     if (peso < pesoMin) {
-      rangoStatusTxt = "Te faltan " + (pesoMin - peso).toFixed(1) + " kg para llegar a tu rango saludable.";
-      rangoStatusClass = "off";
+      diferenciaTxt = "-" + (pesoMin - peso).toFixed(1) + " kg";
     } else if (peso > pesoMax) {
-      rangoStatusTxt = "Estás " + (peso - pesoMax).toFixed(1) + " kg por encima de tu rango saludable.";
-      rangoStatusClass = "off";
+      diferenciaTxt = "+" + (peso - pesoMax).toFixed(1) + " kg";
     } else {
-      rangoStatusTxt = "✓ Estás dentro de tu rango de peso saludable.";
-      rangoStatusClass = "ok";
+      diferenciaTxt = "✓ En tu rango";
     }
+
+    const RIESGOS = {
+      bajo: {
+        icon: "ℹ️",
+        fact: "El bajo peso también está asociado a mayor riesgo de sistema inmune debilitado y osteoporosis (OMS).",
+        motiv: "Ganar peso de forma gradual y con buena nutrición mejora tu energía y tus defensas.",
+      },
+      normal: {
+        icon: "✅",
+        fact: "Tu IMC está dentro del rango asociado a menor riesgo de enfermedades cardiovasculares y metabólicas (OMS).",
+        motiv: "Sostener tus hábitos actuales es la mejor forma de mantener este resultado.",
+      },
+      sobrepeso: {
+        icon: "⚠️",
+        fact: "El sobrepeso está asociado a mayor riesgo cardiovascular, de hipertensión y de diabetes tipo 2 (OMS).",
+        motiv: "Bajar solo un 5–10% de tu peso actual ya reduce significativamente estos riesgos.",
+      },
+      obesidad: {
+        icon: "⚠️",
+        fact: "La obesidad está asociada a un riesgo considerablemente mayor de enfermedad cardiovascular, diabetes tipo 2 y otras complicaciones (OMS).",
+        motiv: "Bajar un 5–10% de tu peso actual es una meta alcanzable que mejora tu salud de forma medible.",
+      },
+    };
 
     // Posición del marcador en el gauge, sobre una escala visual de IMC 15 a 40.
     const gaugeMin = 15, gaugeMax = 40;
@@ -659,10 +723,16 @@
     document.getElementById("calorias-label").textContent = "Calorías diarias sugeridas (" + OBJETIVO_LABEL[objetivo] + ")";
     document.getElementById("calorias-valor").textContent = calorias.toLocaleString("es-AR") + " kcal";
     document.getElementById("calorias-desc").textContent = OBJETIVO_DESC[objetivo];
-    document.getElementById("rango-valor").textContent = rangoTxt;
-    const rangoStatus = document.getElementById("rango-status");
-    rangoStatus.textContent = rangoStatusTxt;
-    rangoStatus.className = "rango-status " + rangoStatusClass;
+    const diferenciaEl = document.getElementById("diferencia-valor");
+    diferenciaEl.textContent = diferenciaTxt;
+    diferenciaEl.className = "value diff-valor " + badgeClass;
+    document.getElementById("rango-status").textContent = rangoTxt;
+
+    const riesgo = RIESGOS[badgeClass];
+    document.getElementById("risk-panel").className = "risk-panel " + badgeClass;
+    document.getElementById("risk-icon").textContent = riesgo.icon;
+    document.getElementById("risk-fact").textContent = riesgo.fact;
+    document.getElementById("risk-motiv").textContent = riesgo.motiv;
     document.getElementById("gauge-marker-value").textContent = imcTxt;
     document.getElementById("gauge-marker").style.left = gaugePct + "%";
 
