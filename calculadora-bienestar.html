@@ -188,6 +188,13 @@
     color: var(--green);
   }
 
+  .segmented.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .segmented .seg-btn { white-space: nowrap; }
+
   #resultados {
     margin-top: 28px;
     display: none;
@@ -392,6 +399,23 @@
             <button type="button" class="seg-btn" data-value="hombre">Hombre</button>
           </div>
         </div>
+        <div class="field">
+          <label>Nivel de actividad física</label>
+          <div class="segmented grid" id="actividad-toggle">
+            <button type="button" class="seg-btn active" data-value="1.2">Sedentario</button>
+            <button type="button" class="seg-btn" data-value="1.375">Ligero</button>
+            <button type="button" class="seg-btn" data-value="1.55">Moderado</button>
+            <button type="button" class="seg-btn" data-value="1.725">Intenso</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Objetivo</label>
+          <div class="segmented" id="objetivo-toggle">
+            <button type="button" class="seg-btn" data-value="bajar">Bajar peso</button>
+            <button type="button" class="seg-btn active" data-value="mantener">Mantener</button>
+            <button type="button" class="seg-btn" data-value="subir">Subir peso</button>
+          </div>
+        </div>
         <div class="row">
           <div class="field">
             <label for="peso">Peso (kg)</label>
@@ -471,9 +495,9 @@
         <div class="stat">
           <div class="emoji">🔥</div>
           <div class="info">
-            <div class="label">Calorías diarias sugeridas</div>
+            <div class="label" id="calorias-label">Calorías diarias sugeridas</div>
             <div class="value" id="calorias-valor">--</div>
-            <div class="imc-desc">Estimado para mantener tu peso actual con actividad física ligera.</div>
+            <div class="imc-desc" id="calorias-desc"></div>
           </div>
         </div>
 
@@ -497,13 +521,22 @@
   const submitBtn = form.querySelector("button[type=submit]");
 
   let sexo = "mujer";
-  const sexoToggle = document.getElementById("sexo-toggle");
-  sexoToggle.addEventListener("click", function (e) {
-    const btn = e.target.closest(".seg-btn");
-    if (!btn) return;
-    sexo = btn.dataset.value;
-    sexoToggle.querySelectorAll(".seg-btn").forEach((b) => b.classList.toggle("active", b === btn));
-  });
+  let actividadFactor = 1.2;
+  let objetivo = "mantener";
+
+  function wireToggle(id, onSelect) {
+    const el = document.getElementById(id);
+    el.addEventListener("click", function (e) {
+      const btn = e.target.closest(".seg-btn");
+      if (!btn) return;
+      onSelect(btn.dataset.value);
+      el.querySelectorAll(".seg-btn").forEach((b) => b.classList.toggle("active", b === btn));
+    });
+  }
+
+  wireToggle("sexo-toggle", (v) => { sexo = v; });
+  wireToggle("actividad-toggle", (v) => { actividadFactor = parseFloat(v); });
+  wireToggle("objetivo-toggle", (v) => { objetivo = v; });
 
   document.getElementById("btn-recalcular").addEventListener("click", function () {
     form.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -552,12 +585,14 @@
     const proteina = peso * 1.5;
     const agua = peso * 0.04;
 
-    // Metabolismo basal (Mifflin-St Jeor) + actividad ligera (x1.2) para una estimación de mantenimiento.
+    // Metabolismo basal (Mifflin-St Jeor) ajustado por nivel de actividad y objetivo (±500 kcal).
     const alturaCm = alturaMts * 100;
     const tmb = sexo === "hombre"
       ? 10 * peso + 6.25 * alturaCm - 5 * edad + 5
       : 10 * peso + 6.25 * alturaCm - 5 * edad - 161;
-    const calorias = Math.round(tmb * 1.2);
+    const mantenimiento = tmb * actividadFactor;
+    const OBJETIVO_AJUSTE = { bajar: -500, mantener: 0, subir: 500 };
+    const calorias = Math.max(1200, Math.round(mantenimiento + OBJETIVO_AJUSTE[objetivo]));
 
     const DESCRIPCIONES = {
       bajo: "Tu peso está por debajo del rango recomendado para tu altura.",
@@ -615,7 +650,15 @@
     document.getElementById("imc-desc").textContent = DESCRIPCIONES[badgeClass];
     document.getElementById("proteina-valor").textContent = proteinaTxt;
     document.getElementById("agua-valor").textContent = aguaTxt;
+    const OBJETIVO_LABEL = { bajar: "para bajar de peso", mantener: "para mantener tu peso", subir: "para subir de peso" };
+    const OBJETIVO_DESC = {
+      bajar: "Incluye un déficit de ~500 kcal/día para una pérdida de peso gradual y sostenible.",
+      mantener: "Estimado para mantener tu peso actual según tu nivel de actividad.",
+      subir: "Incluye un superávit de ~500 kcal/día para ganar peso de forma gradual.",
+    };
+    document.getElementById("calorias-label").textContent = "Calorías diarias sugeridas (" + OBJETIVO_LABEL[objetivo] + ")";
     document.getElementById("calorias-valor").textContent = calorias.toLocaleString("es-AR") + " kcal";
+    document.getElementById("calorias-desc").textContent = OBJETIVO_DESC[objetivo];
     document.getElementById("rango-valor").textContent = rangoTxt;
     const rangoStatus = document.getElementById("rango-status");
     rangoStatus.textContent = rangoStatusTxt;
@@ -628,7 +671,7 @@
       "- IMC: " + imcTxt + " (" + categoria + ")\n" +
       "- Proteína diaria sugerida: " + proteinaTxt + "\n" +
       "- Agua sugerida: " + aguaTxt + "\n" +
-      "- Calorías diarias sugeridas: " + calorias.toLocaleString("es-AR") + " kcal\n" +
+      "- Calorías diarias sugeridas: " + calorias.toLocaleString("es-AR") + " kcal (" + OBJETIVO_LABEL[objetivo] + ")\n" +
       "Quiero un plan personalizado para lograrlo.";
 
     document.getElementById("cta-whatsapp").href =
