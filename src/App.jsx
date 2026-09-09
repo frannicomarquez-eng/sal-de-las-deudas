@@ -49,11 +49,34 @@ const fmt = (n) =>
   new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n || 0);
 const pct = (a, b) => (b === 0 ? 0 : Math.min(100, Math.round((a / b) * 100)));
 
+const toDateStr = (d) => d.toISOString().slice(0, 10);
+const todayStr = () => toDateStr(new Date());
+const lastNDays = (n) => {
+  const out = [];
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    out.push(toDateStr(d));
+  }
+  return out;
+};
+const calcRacha = (historial = []) => {
+  let racha = 0;
+  const d = new Date();
+  if (!historial.includes(todayStr())) d.setDate(d.getDate() - 1);
+  while (historial.includes(toDateStr(d))) {
+    racha++;
+    d.setDate(d.getDate() - 1);
+  }
+  return racha;
+};
+
 const DEFAULT_DATA = {
   deudas: [],
   presupuesto: { ingreso: 0, fijos: 0, variables: 0, ahorro: 0 },
   hormiga: [],
   metas: [],
+  habitos: [],
 };
 
 async function saveUserData(uid, data) {
@@ -301,6 +324,7 @@ function WizardScreen({ user, onDone }) {
         presupuesto: { ingreso: data.ingreso, fijos: 0, variables: 0, ahorro: 0 },
         hormiga: [],
         metas: data.meta ? [{ nombre: data.meta, icono: data.metaIcono, objetivo: 0, actual: 0 }] : [],
+        habitos: [],
       });
     } else setStep(step + 1);
   };
@@ -465,6 +489,7 @@ const TABS = [
   { id: "presupuesto", label: "Presupuesto", icon: "📊" },
   { id: "hormiga", label: "Hormiga", icon: "🐜" },
   { id: "metas", label: "Metas", icon: "🎯" },
+  { id: "habitos", label: "Hábitos", icon: "✅" },
 ];
 
 const ROL_CONFIG = {
@@ -477,6 +502,9 @@ function DashboardTab({ user, data, onSignOut, rol = "usuario", nombre = "" }) {
   const totalDeuda = data.deudas.reduce((s, d) => s + d.saldo, 0);
   const totalHormiga = data.hormiga.reduce((s, h) => s + h.anual, 0);
   const metasPct = data.metas.length > 0 ? Math.round(data.metas.reduce((s, m) => s + pct(m.actual, m.objetivo), 0) / data.metas.length) : 0;
+  const habitos = data.habitos || [];
+  const hoy = todayStr();
+  const habitosHoy = habitos.filter((h) => (h.historial || []).includes(hoy)).length;
   const displayName = nombre || user?.displayName?.split(" ")[0] || user?.email?.split("@")[0];
   const rolCfg = ROL_CONFIG[rol] || ROL_CONFIG.usuario;
   return (
@@ -498,6 +526,7 @@ function DashboardTab({ user, data, onSignOut, rol = "usuario", nombre = "" }) {
           { label: "INGRESO / MES", value: data.presupuesto.ingreso > 0 ? fmt(data.presupuesto.ingreso) : "—", color: C.green, icon: "💰", sub: "mensual neto" },
           { label: "HORMIGA / AÑO", value: totalHormiga > 0 ? fmt(totalHormiga) : "—", color: C.gold, icon: "🐜", sub: "fugas silenciosas" },
           { label: "METAS", value: `${metasPct}%`, color: C.blue, icon: "🎯", sub: `${data.metas.length} activas` },
+          { label: "HÁBITOS HOY", value: habitos.length > 0 ? `${habitosHoy}/${habitos.length}` : "—", color: C.green, icon: "✅", sub: "constancia diaria" },
         ].map((s) => (
           <Card key={s.label} style={{ padding: "16px 18px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
@@ -780,6 +809,130 @@ function MetasTab({ data, onChange }) {
   );
 }
 
+const DIAS_LABEL = ["D", "L", "M", "M", "J", "V", "S"];
+const HABITOS_EJEMPLOS = [
+  { nombre: "Tomar agua", icono: "💧" },
+  { nombre: "Ejercicio", icono: "🏃" },
+  { nombre: "Leer", icono: "📖" },
+  { nombre: "Meditar", icono: "🧘" },
+  { nombre: "Dormir 8hs", icono: "😴" },
+  { nombre: "No fumar", icono: "🚭" },
+];
+const HABITO_ICONOS = ["✅", "💧", "🏃", "📖", "🧘", "😴", "💰", "🥗", "🚭", "✍️", "🎨", "🙏"];
+
+function HabitoCard({ habito, onToggleDia, onDelete }) {
+  const dias = lastNDays(7);
+  const hoy = todayStr();
+  const racha = calcRacha(habito.historial);
+  const completadosSemana = dias.filter((d) => habito.historial.includes(d)).length;
+  return (
+    <Card style={{ marginBottom: 16 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 24 }}>{habito.icono}</span>
+          <div>
+            <div style={{ color: C.text, fontWeight: 700, fontSize: 15 }}>{habito.nombre}</div>
+            <div style={{ color: C.muted, fontSize: 12, marginTop: 2 }}>{completadosSemana}/7 esta semana</div>
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {racha > 0 && <Pill color={C.gold}>🔥 {racha}d</Pill>}
+          <button onClick={onDelete} style={{ background: "none", border: "none", color: C.muted, cursor: "pointer", fontSize: 18 }}>×</button>
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 6 }}>
+        {dias.map((d) => {
+          const done = habito.historial.includes(d);
+          const isToday = d === hoy;
+          const dayNum = new Date(d + "T00:00:00").getDay();
+          return (
+            <div key={d} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+              <span style={{ color: C.muted, fontSize: 10, fontWeight: 700 }}>{DIAS_LABEL[dayNum]}</span>
+              <button
+                onClick={() => onToggleDia(d)}
+                style={{
+                  width: "100%", aspectRatio: "1", borderRadius: 10, cursor: "pointer",
+                  background: done ? C.green : C.surface,
+                  border: `2px solid ${done ? C.green : isToday ? C.gold + "88" : C.borderLight}`,
+                  color: done ? "#0A0F0C" : C.muted, fontWeight: 900, fontSize: 13,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}
+              >
+                {done ? "✓" : ""}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
+function HabitosTab({ data, onChange }) {
+  const habitos = data.habitos || [];
+  const [nombre, setNombre] = useState("");
+  const [icono, setIcono] = useState("✅");
+  const setHabitos = (h) => onChange({ ...data, habitos: h });
+  const addHabito = () => {
+    if (!nombre.trim()) return;
+    setHabitos([...habitos, { nombre: nombre.trim(), icono, historial: [] }]);
+    setNombre("");
+    setIcono("✅");
+  };
+  const toggleDia = (idx, dateStr) => {
+    const h = [...habitos];
+    const actual = h[idx].historial || [];
+    const historial = actual.includes(dateStr) ? actual.filter((d) => d !== dateStr) : [...actual, dateStr];
+    h[idx] = { ...h[idx], historial };
+    setHabitos(h);
+  };
+  const eliminar = (idx) => setHabitos(habitos.filter((_, i) => i !== idx));
+
+  const hoy = todayStr();
+  const cumplidosHoy = habitos.filter((h) => (h.historial || []).includes(hoy)).length;
+
+  return (
+    <div>
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ color: C.gold, fontSize: 10, fontWeight: 700, letterSpacing: 2.5, marginBottom: 6 }}>MÓDULO 5</div>
+        <h2 style={{ color: C.text, fontSize: 22, fontWeight: 900, margin: "0 0 6px" }}>Hábitos Diarios</h2>
+      </div>
+      <InfoBanner icon="✅" title="¿Por qué hábitos en una app de plata?" color={C.green} text="Salir de deudas no es solo números: es constancia. Marcá tus hábitos día a día y construí la disciplina que sostiene tu plan financiero." />
+      {habitos.length > 0 && (
+        <Card style={{ marginBottom: 20 }} glow={cumplidosHoy === habitos.length ? C.green : undefined}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <div style={{ color: C.muted, fontSize: 10, fontWeight: 700, letterSpacing: 1.5 }}>HOY</div>
+            <span style={{ color: C.text, fontWeight: 800, fontSize: 13 }}>{cumplidosHoy}/{habitos.length}</span>
+          </div>
+          <Bar value={cumplidosHoy} max={habitos.length} color={C.green} />
+        </Card>
+      )}
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ color: C.muted, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 10 }}>AGREGAR RÁPIDO</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {HABITOS_EJEMPLOS.map((e, i) => (
+            <button key={i} onClick={() => { setNombre(e.nombre); setIcono(e.icono); }} style={{ background: C.surface, border: `1px solid ${C.borderLight}`, borderRadius: 99, color: C.textSoft, padding: "7px 14px", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>{e.icono} {e.nombre}</button>
+          ))}
+        </div>
+      </div>
+      <Card style={{ marginBottom: 20 }}>
+        <div style={{ color: C.muted, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 16 }}>NUEVO HÁBITO</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+          {HABITO_ICONOS.map((ic) => (
+            <button key={ic} onClick={() => setIcono(ic)} style={{ width: 40, height: 40, fontSize: 20, background: icono === ic ? C.green + "22" : C.surface, border: `2px solid ${icono === ic ? C.green : C.border}`, borderRadius: 10, cursor: "pointer" }}>{ic}</button>
+          ))}
+        </div>
+        <Inp label="Nombre del hábito" value={nombre} onChange={setNombre} prefix="" type="text" placeholder="Ej: Tomar agua" />
+        <Btn onClick={addHabito} color={C.green}>+ Agregar hábito</Btn>
+      </Card>
+      {habitos.map((h, i) => (
+        <HabitoCard key={i} habito={h} onToggleDia={(d) => toggleDia(i, d)} onDelete={() => eliminar(i)} />
+      ))}
+      {habitos.length === 0 && <Card style={{ textAlign: "center", padding: "40px" }}><div style={{ fontSize: 44, marginBottom: 14 }}>✅</div><div style={{ color: C.text, fontWeight: 700 }}>Creá tu primer hábito diario</div></Card>}
+    </div>
+  );
+}
+
 function UnauthorizedScreen({ email, onBack }) {
   return (
     <div style={{ minHeight: "100vh", background: C.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "'Georgia', serif", padding: "24px 20px" }}>
@@ -945,6 +1098,7 @@ export default function App() {
         {tab === "presupuesto" && <PresupuestoTab data={appData} onChange={setAppData} />}
         {tab === "hormiga" && <HormigaTab data={appData} onChange={setAppData} />}
         {tab === "metas" && <MetasTab data={appData} onChange={setAppData} />}
+        {tab === "habitos" && <HabitosTab data={appData} onChange={setAppData} />}
         {tab === "admin" && <AdminTab />}
       </div>
       <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, background: C.surface, borderTop: `1px solid ${C.border}`, display: "flex", padding: "10px 0 18px" }}>
