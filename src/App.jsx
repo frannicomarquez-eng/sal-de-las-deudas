@@ -175,6 +175,7 @@ function SlidesScreen({ onDone }) {
         <div style={{ background: slide.color + "20", color: slide.color, border: `1px solid ${slide.color}44`, borderRadius: 99, padding: "4px 14px", fontSize: 11, fontWeight: 700, letterSpacing: 1.5, marginBottom: 20, textTransform: "uppercase" }}>{slide.tag}</div>
         <h1 style={{ color: C.text, fontSize: 28, fontWeight: 900, margin: "0 0 16px", letterSpacing: -0.5, lineHeight: 1.25, whiteSpace: "pre-line" }}>{slide.title}</h1>
         <p style={{ color: C.textSoft, fontSize: 15, lineHeight: 1.7, margin: 0, maxWidth: 320 }}>{slide.subtitle}</p>
+        {current === 0 && <a href="/info.html" style={{ marginTop: 22, color: C.gold, fontSize: 14, fontWeight: 600 }}>Más información sobre la app →</a>}
       </div>
       <div style={{ padding: "0 28px 48px" }}>
         <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 28 }}>
