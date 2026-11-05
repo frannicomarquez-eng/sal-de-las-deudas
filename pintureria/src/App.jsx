@@ -146,7 +146,12 @@ export default function App() {
   if (usuario === undefined) return <div className="centro"><div className="spinner" /></div>;
   if (!usuario) return <Login />;
   if (!perfil || !sucursales.includes(perfil.sucursal))
-    return <ElegirPerfil sucursales={sucursales} inicial={perfil} nombreSugerido={usuario.displayName} onListo={setPerfil} />;
+    return <ElegirPerfil sucursales={sucursales} inicial={perfil} nombreSugerido={usuario.displayName}
+        onListo={async (p, esNueva) => {
+          if (esNueva && !(await conError(guardarConfig)({ sucursales: [...sucursales, p.sucursal] }))) return;
+          setPerfil(p);
+        }}
+      />;
 
   const usuarioTxt = perfil.nombre || usuario.displayName || usuario.email;
 
@@ -180,7 +185,8 @@ export default function App() {
             miSucursal={perfil.sucursal}
             usuario={usuarioTxt}
             prestamos={prestamos}
-            onGuardar={async (datos) => {
+            onGuardar={async (datos, sucursalNueva) => {
+              if (sucursalNueva) await conError(guardarConfig)({ sucursales: [...sucursales, sucursalNueva] });
               if (await conError(crearPrestamo)(datos)) {
                 notificar("Préstamo registrado ✔");
                 setTab("pendientes");
@@ -188,7 +194,7 @@ export default function App() {
             }}
           />
         )}
-        {tab === "saldos" && <Saldos prestamos={prestamos} miSucursal={perfil.sucursal} sucursales={sucursales} />}
+        {tab === "saldos" && <Saldos prestamos={prestamos} miSucursal={perfil.sucursal} />}
         {tab === "historial" && (
           <Historial prestamos={prestamos} miSucursal={perfil.sucursal} onEliminar={conError(eliminarPrestamo)} />
         )}
@@ -266,7 +272,10 @@ function Login() {
 }
 
 function ElegirPerfil({ sucursales, inicial, nombreSugerido, onListo }) {
-  const [sucursal, setSucursal] = useState(inicial?.sucursal && sucursales.includes(inicial.sucursal) ? inicial.sucursal : "");
+  const [texto, setTexto] = useState(inicial?.sucursal || "");
+  const limpio = texto.trim().replace(/\s+/g, " ");
+  const sucursal = sucursales.find((s) => s.toLowerCase() === limpio.toLowerCase()) || limpio;
+  const esNueva = sucursal && !sucursales.includes(sucursal);
   const [nombre, setNombre] = useState(inicial?.nombre || (nombreSugerido || "").split(" ")[0]);
   return (
     <div className="centro">
@@ -274,17 +283,35 @@ function ElegirPerfil({ sucursales, inicial, nombreSugerido, onListo }) {
         <div className="logo">📍</div>
         <h1>¿En qué sucursal estás?</h1>
         <p className="suave">Se guarda en este dispositivo. Podés cambiarla después en Ajustes.</p>
-        <div className="grilla-sucursales">
-          {sucursales.map((s) => (
-            <button key={s} className={`opcion ${sucursal === s ? "elegida" : ""}`} onClick={() => setSucursal(s)}>
-              {s}
-            </button>
-          ))}
-        </div>
+        <Campo label="Sucursal">
+          <input
+            id="mi-sucursal"
+            list="lista-mi-sucursal"
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            placeholder="Escribí el nombre de tu sucursal"
+            autoComplete="off"
+          />
+          <datalist id="lista-mi-sucursal">
+            {sucursales.map((s) => (
+              <option key={s} value={s} />
+            ))}
+          </datalist>
+        </Campo>
+        {sucursales.length <= 8 && (
+          <div className="grilla-sucursales">
+            {sucursales.map((s) => (
+              <button key={s} className={`opcion ${sucursal === s ? "elegida" : ""}`} onClick={() => setTexto(s)}>
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
+        {esNueva && <p className="ayuda">“{sucursal}” no está en la lista: se va a agregar.</p>}
         <Campo label="Tu nombre">
           <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej: Juan" />
         </Campo>
-        <button className="btn primario" disabled={!sucursal || !nombre.trim()} onClick={() => onListo({ sucursal, nombre: nombre.trim() })}>
+        <button className="btn primario" disabled={!sucursal || !nombre.trim()} onClick={() => onListo({ sucursal, nombre: nombre.trim() }, esNueva)}>
           Continuar
         </button>
       </div>
@@ -527,9 +554,17 @@ function ModalDevolucion({ p, usuario, miSucursal, onCerrar, onGuardar }) {
 /* ================= Nuevo préstamo ================= */
 
 function NuevoPrestamo({ sucursales, miSucursal, usuario, prestamos, onGuardar }) {
-  const otras = sucursales.filter((s) => s !== miSucursal);
+  const otras = useMemo(() => {
+    const set = new Set(sucursales);
+    prestamos.forEach((p) => {
+      set.add(p.origen);
+      set.add(p.destino);
+    });
+    set.delete(miSucursal);
+    return [...set].filter(Boolean).sort((a, b) => a.localeCompare(b, "es"));
+  }, [sucursales, prestamos, miSucursal]);
   const [sentido, setSentido] = useState("enviamos");
-  const [otra, setOtra] = useState(otras[0] || "");
+  const [otraTexto, setOtraTexto] = useState("");
   const [items, setItems] = useState([nuevoItem()]);
   const [entrega, setEntrega] = useState(usuario);
   const [retira, setRetira] = useState("");
@@ -544,7 +579,12 @@ function NuevoPrestamo({ sucursales, miSucursal, usuario, prestamos, onGuardar }
 
   const cambiarItem = (id, campo, valor) => setItems(items.map((i) => (i.id === id ? { ...i, [campo]: valor } : i)));
   const validos = items.filter((i) => i.producto.trim() && Number(i.cantidad) > 0);
-  const puedeGuardar = otra && validos.length > 0 && !guardando;
+  const normalizar = (t) => t.trim().replace(/\s+/g, " ").toLowerCase();
+  const coincidencia = otras.find((s) => normalizar(s) === normalizar(otraTexto));
+  const otra = coincidencia || otraTexto.trim().replace(/\s+/g, " ");
+  const esMia = normalizar(otraTexto) === normalizar(miSucursal);
+  const esNueva = otra && !esMia && !coincidencia;
+  const puedeGuardar = otra && !esMia && validos.length > 0 && !guardando;
 
   const guardar = async () => {
     setGuardando(true);
@@ -562,12 +602,9 @@ function NuevoPrestamo({ sucursales, miSucursal, usuario, prestamos, onGuardar }
       creadoPor: usuario,
       creadoEn: miSucursal,
       movimientos: [{ fecha: ahora, texto: `Préstamo registrado en ${miSucursal}`, usuario }],
-    });
+    }, esNueva && !sucursales.includes(otra) ? otra : null);
     setGuardando(false);
   };
-
-  if (otras.length === 0)
-    return <Vacio icono="🏬" texto="Agregá al menos otra sucursal en Ajustes para registrar préstamos." />;
 
   return (
     <div className="tarjeta">
@@ -581,15 +618,27 @@ function NuevoPrestamo({ sucursales, miSucursal, usuario, prestamos, onGuardar }
         ]}
       />
       <Campo label={sentido === "enviamos" ? "¿A qué sucursal?" : "¿Qué sucursal nos prestó?"}>
-        <select value={otra} onChange={(e) => setOtra(e.target.value)}>
+        <input
+          id="sucursal-otra"
+          list="sucursales-conocidas"
+          value={otraTexto}
+          onChange={(e) => setOtraTexto(e.target.value)}
+          placeholder="Escribí el nombre de la sucursal"
+          autoComplete="off"
+        />
+        <datalist id="sucursales-conocidas">
           {otras.map((s) => (
-            <option key={s}>{s}</option>
+            <option key={s} value={s} />
           ))}
-        </select>
+        </datalist>
       </Campo>
-      <div className="resumen-sentido">
-        {sentido === "enviamos" ? `${miSucursal} → ${otra}` : `${otra} → ${miSucursal}`}
-      </div>
+      {esMia && <p className="texto-error chico">Esa es tu propia sucursal. Elegí otra.</p>}
+      {esNueva && <p className="ayuda">“{otra}” no está en la lista: se va a agregar al guardar.</p>}
+      {otra && !esMia && (
+        <div className="resumen-sentido">
+          {sentido === "enviamos" ? `${miSucursal} → ${otra}` : `${otra} → ${miSucursal}`}
+        </div>
+      )}
 
       <h3>Productos</h3>
       <datalist id="productos-conocidos">
@@ -647,11 +696,16 @@ function NuevoPrestamo({ sucursales, miSucursal, usuario, prestamos, onGuardar }
 
 /* ================= Saldos ================= */
 
-function Saldos({ prestamos, miSucursal, sucursales }) {
+function Saldos({ prestamos, miSucursal }) {
   const abiertos = prestamos.filter((p) => estadoDe(p) !== "devuelto");
 
-  const porSucursal = sucursales
-    .filter((s) => s !== miSucursal)
+  const conMovimiento = new Set();
+  abiertos.forEach((p) => {
+    if (p.origen === miSucursal) conMovimiento.add(p.destino);
+    if (p.destino === miSucursal) conMovimiento.add(p.origen);
+  });
+  const porSucursal = [...conMovimiento]
+    .sort((a, b) => a.localeCompare(b, "es"))
     .map((s) => {
       const juntar = (lista) => {
         const mapa = {};
@@ -689,7 +743,8 @@ function Saldos({ prestamos, miSucursal, sucursales }) {
 
   return (
     <>
-      <p className="ayuda">Lo que está pendiente entre {miSucursal} y cada sucursal, sumado por producto.</p>
+      <p className="ayuda">Sucursales con algo pendiente con {miSucursal}, sumado por producto.</p>
+      {porSucursal.length === 0 && <Vacio icono="⚖️" texto="No hay nada pendiente con ninguna sucursal." />}
       {porSucursal.map(({ s, nosDeben, debemos }) => (
         <div key={s} className="tarjeta">
           <h2>{s}</h2>
