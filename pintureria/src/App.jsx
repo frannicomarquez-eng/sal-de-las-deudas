@@ -13,7 +13,7 @@ import {
   guardarConfig,
 } from "./store.js";
 import { Muestra, MuestraSucursal, Logo, Icono } from "./visual.jsx";
-import { colorDeTono } from "./colores.js";
+import { colorDeTono, colorSucursal } from "./colores.js";
 
 /* ================= Utilidades ================= */
 
@@ -165,11 +165,11 @@ export default function App() {
           <div>
             <div className="marca">Préstamos entre sucursales</div>
             <button className="chip-sucursal" onClick={() => setTab("ajustes")} title="Cambiar sucursal">
-              <MuestraSucursal nombre={perfil.sucursal} /> {perfil.sucursal} · {usuarioTxt}
+              <MuestraSucursal nombre={perfil.sucursal} /> <b>{perfil.sucursal}</b> <span className="suave">{usuarioTxt}</span>
             </button>
           </div>
         </div>
-        {modoLocal && <span className="etiqueta-prueba">MODO PRUEBA</span>}
+        {modoLocal && <span className="etiqueta-prueba">Modo prueba</span>}
       </header>
 
       {error && <div className="error-banner">{error}</div>}
@@ -365,7 +365,17 @@ function Pendientes({ prestamos, miSucursal, usuario, onDevolver, notificar }) {
   const abiertos = prestamos.filter((p) => estadoDe(p) !== "devuelto");
   const enviados = abiertos.filter((p) => p.origen === miSucursal).sort((a, b) => a.fecha.localeCompare(b.fecha));
   const recibidos = abiertos.filter((p) => p.destino === miSucursal).sort((a, b) => a.fecha.localeCompare(b.fecha));
-  const lista = vista === "prestamos" ? enviados : recibidos;
+  const [filtro, setFiltro] = useState(null);
+  const base = vista === "prestamos" ? enviados : recibidos;
+  const contraparte = (p) => (p.origen === miSucursal ? p.destino : p.origen);
+  const conteo = {};
+  base.forEach((p) => {
+    const c = contraparte(p);
+    conteo[c] = (conteo[c] || 0) + 1;
+  });
+  const carta = Object.entries(conteo).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "es"));
+  const filtroActivo = filtro && conteo[filtro] ? filtro : null;
+  const lista = filtroActivo ? base.filter((p) => contraparte(p) === filtroActivo) : base;
 
   return (
     <>
@@ -382,6 +392,33 @@ function Pendientes({ prestamos, miSucursal, usuario, onDevolver, notificar }) {
           ? "Productos que salieron de tu sucursal y todavía no volvieron."
           : "Productos que te prestaron otras sucursales y tenés que devolver."}
       </p>
+      {carta.length > 1 && (
+        <div className="carta" role="group" aria-label="Filtrar por sucursal">
+          {carta.map(([nombre, n]) => (
+            <button
+              key={nombre}
+              className={`chip-color ${filtroActivo === nombre ? "activo" : ""}`}
+              style={{ "--m": colorSucursal(nombre) }}
+              aria-pressed={filtroActivo === nombre}
+              onClick={() => setFiltro(filtroActivo === nombre ? null : nombre)}
+            >
+              <span className="chip-color-tinta" />
+              <span className="chip-color-nombre">{nombre}</span>
+              <span className="chip-color-n">
+                {n} {n === 1 ? "préstamo" : "préstamos"}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+      {filtroActivo && (
+        <p className="ayuda">
+          Mostrando solo {filtroActivo}.{" "}
+          <button className="link" onClick={() => setFiltro(null)}>
+            Ver todas
+          </button>
+        </p>
+      )}
       {lista.length === 0 ? (
         <Vacio icono="vacio" texto="No hay nada pendiente acá." />
       ) : (
@@ -441,7 +478,7 @@ function TarjetaPrestamo({ p, miSucursal, acciones }) {
             </span>
           </div>
           <div className="suave chico">
-            {fechaCorta(p.fecha)} · hace {dias === 0 ? "menos de 1 día" : `${dias} día${dias === 1 ? "" : "s"}`}
+            {fechaCorta(p.fecha)}, hace {dias === 0 ? "menos de 1 día" : `${dias} día${dias === 1 ? "" : "s"}`}
           </div>
         </div>
         <span className={`estado ${estado} ${atrasado ? "alerta" : ""}`}>{atrasado ? <><Icono nombre="alerta" tam={13} /> {dias} días</> : ETIQUETA_ESTADO[estado]}</span>
@@ -486,7 +523,7 @@ function TarjetaPrestamo({ p, miSucursal, acciones }) {
           <div className="movimientos">
             {(p.movimientos || []).map((m, idx) => (
               <div key={idx} className="movimiento">
-                <span className="suave">{fechaHora(m.fecha)}</span> · {m.texto} <span className="suave">({m.usuario})</span>
+                <span className="suave">{fechaHora(m.fecha)}</span> {m.texto} <span className="suave">({m.usuario})</span>
               </div>
             ))}
           </div>
@@ -527,7 +564,7 @@ function ModalDevolucion({ p, usuario, miSucursal, onCerrar, onGuardar }) {
       <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
         <h2>Registrar devolución</h2>
         <p className="suave chico">
-          {p.origen} → {p.destino} · {fechaCorta(p.fecha)}
+          De {p.origen} a {p.destino}, {fechaCorta(p.fecha)}
         </p>
         {pendientes.map((i) => {
           const max = i.cantidad - (i.devuelto || 0);
@@ -536,7 +573,7 @@ function ModalDevolucion({ p, usuario, miSucursal, onCerrar, onGuardar }) {
               <div>
                 <div>{i.producto}</div>
                 <div className="suave chico">
-                  {i.unidad} · faltan {max}
+                  {i.unidad}, faltan {max}
                 </div>
               </div>
               <input
