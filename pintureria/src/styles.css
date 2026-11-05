@@ -18,7 +18,7 @@
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #161210;
     --surface: #211b18;
     --surface-2: #2b2420;
@@ -38,9 +38,29 @@
     color-scheme: dark;
   }
 }
+:root[data-theme="dark"] {
+    --bg: #161210;
+    --surface: #211b18;
+    --surface-2: #2b2420;
+    --border: #3a312b;
+    --text: #f3ece6;
+    --soft: #a8998d;
+    --accent: #f97316;
+    --accent-soft: #3d2416;
+    --ok: #4ade80;
+    --ok-soft: #14301f;
+    --warn: #fbbf24;
+    --warn-soft: #3a2c10;
+    --bad: #f87171;
+    --bad-soft: #3b1717;
+    --info: #93c5fd;
+    --info-soft: #172a4a;
+    color-scheme: dark;
+}
 
 * { box-sizing: border-box; }
 html, body { margin: 0; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
 body {
   background: var(--bg);
   color: var(--text);
@@ -57,9 +77,10 @@ h3 { font-size: 14px; margin: 20px 0 8px; text-transform: uppercase; letter-spac
 .centro { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
 
 .cabecera {
-  position: sticky; top: 0; z-index: 5;
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
   display: flex; justify-content: space-between; align-items: center; gap: 8px;
-  padding: 12px 16px; background: var(--bg); border-bottom: 1px solid var(--border);
+  padding-block: 12px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--bg); border-bottom: 1px solid var(--border);
 }
 .marca { font-weight: 800; font-size: 16px; }
 .chip-sucursal {
@@ -68,7 +89,7 @@ h3 { font-size: 14px; margin: 20px 0 8px; text-transform: uppercase; letter-spac
 }
 .etiqueta-prueba { font-size: 11px; font-weight: 700; background: var(--warn-soft); color: var(--warn); padding: 3px 8px; border-radius: 6px; }
 
-.contenido { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.contenido { padding-block: 16px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 12px; }
 
 .tarjeta { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
 .acceso { width: 100%; max-width: 400px; text-align: center; display: flex; flex-direction: column; gap: 12px; }
@@ -97,6 +118,7 @@ textarea { resize: vertical; }
   border: 1px solid transparent; cursor: pointer; text-decoration: none; text-align: center;
 }
 .btn.primario { background: var(--accent); color: #fff; }
+.btn.peligro { background: var(--bad); color: var(--surface); }
 .btn.secundario { background: var(--surface-2); border-color: var(--border); color: var(--text); }
 .btn.chico { padding: 8px 12px; font-size: 14px; width: auto; }
 .btn:disabled { opacity: .45; cursor: not-allowed; }

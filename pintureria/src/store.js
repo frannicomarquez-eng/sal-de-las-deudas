@@ -67,25 +67,30 @@ export function salir() {
 const LS_PRESTAMOS = "pint_prestamos";
 const LS_CONFIG = "pint_config";
 const oyentes = { prestamos: new Set(), config: new Set() };
+const memoria = {};
 
 function leerLS(clave, def) {
+  if (clave in memoria) return memoria[clave];
   try {
     const v = localStorage.getItem(clave);
-    return v ? JSON.parse(v) : def;
+    memoria[clave] = v ? JSON.parse(v) : def;
   } catch {
-    return def;
+    memoria[clave] = def;
   }
+  return memoria[clave];
 }
 function escribirLS(clave, valor, canal) {
+  memoria[clave] = valor;
   try {
     localStorage.setItem(clave, JSON.stringify(valor));
-  } catch (e) {
-    console.error(e);
+  } catch {
+    /* sin almacenamiento: queda en memoria */
   }
   oyentes[canal].forEach((fn) => fn(valor));
 }
 if (modoLocal && typeof window !== "undefined") {
   window.addEventListener("storage", (e) => {
+    delete memoria[e.key];
     if (e.key === LS_PRESTAMOS) oyentes.prestamos.forEach((fn) => fn(leerLS(LS_PRESTAMOS, [])));
     if (e.key === LS_CONFIG) oyentes.config.forEach((fn) => fn(leerLS(LS_CONFIG, {})));
   });

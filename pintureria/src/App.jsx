@@ -52,13 +52,27 @@ function textoWhatsApp(p) {
     .join("\n");
 }
 
-function exportarCSV(prestamos) {
+function filasExport(prestamos) {
   const filas = [["Fecha", "Origen (presta)", "Destino (recibe)", "Producto", "Código", "Color", "Cantidad", "Unidad", "Devuelto", "Estado", "Entregó", "Retiró", "Notas"]];
   prestamos.forEach((p) =>
     p.items.forEach((i) =>
       filas.push([fechaCorta(p.fecha), p.origen, p.destino, i.producto, i.codigo, i.color, i.cantidad, i.unidad, i.devuelto || 0, ETIQUETA_ESTADO[estadoDe(p)], p.entrega, p.retira, p.notas]),
     ),
   );
+  return filas;
+}
+
+const enPaginaClaude = import.meta.env.VITE_PAGINA_CLAUDE === "1";
+
+function copiarParaExcel(prestamos) {
+  const texto = filasExport(prestamos)
+    .map((f) => f.map((c) => String(c ?? "").replace(/[\t\n]/g, " ")).join("\t"))
+    .join("\n");
+  return navigator.clipboard.writeText(texto);
+}
+
+function exportarCSV(prestamos) {
+  const filas = filasExport(prestamos);
   const csv = filas.map((f) => f.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(";")).join("\n");
   const url = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }));
   const a = document.createElement("a");
@@ -124,7 +138,7 @@ export default function App() {
       await fn(...args);
       return true;
     } catch (e) {
-      alert("No se pudo guardar: " + (e.message || e));
+      setError("No se pudo guardar: " + (e.message || e));
       return false;
     }
   };
@@ -701,6 +715,8 @@ function Historial({ prestamos, miSucursal, onEliminar }) {
   const [filtro, setFiltro] = useState("mia");
   const [estado, setEstado] = useState("todos");
   const [busqueda, setBusqueda] = useState("");
+  const [aBorrar, setABorrar] = useState(null);
+  const [copiado, setCopiado] = useState("");
 
   const lista = prestamos
     .filter((p) => filtro === "todas" || p.origen === miSucursal || p.destino === miSucursal)
@@ -730,9 +746,26 @@ function Historial({ prestamos, miSucursal, onEliminar }) {
             <option value="cerrados">Devueltos</option>
           </select>
         </div>
-        <button className="btn secundario chico" disabled={!lista.length} onClick={() => exportarCSV(lista)}>
-          ⬇ Exportar a Excel (CSV)
-        </button>
+        <div className="acciones">
+          {copiado && <span className="suave chico">{copiado}</span>}
+          <button
+            className="btn secundario chico"
+            disabled={!lista.length}
+            onClick={() =>
+              copiarParaExcel(lista).then(
+                () => setCopiado("Copiado. Pegalo en Excel."),
+                () => setCopiado("No se pudo copiar en este navegador."),
+              )
+            }
+          >
+            📋 Copiar para Excel
+          </button>
+          {!enPaginaClaude && (
+            <button className="btn secundario chico" disabled={!lista.length} onClick={() => exportarCSV(lista)}>
+              ⬇ Descargar CSV
+            </button>
+          )}
+        </div>
       </div>
       {lista.length === 0 ? (
         <Vacio icono="🗂️" texto="No hay préstamos con esos filtros." />
@@ -743,14 +776,27 @@ function Historial({ prestamos, miSucursal, onEliminar }) {
             p={p}
             miSucursal={miSucursal}
             acciones={
-              <button
-                className="link peligro"
-                onClick={() => {
-                  if (confirm("¿Eliminar este préstamo? No se puede deshacer.")) onEliminar(p.id);
-                }}
-              >
-                Eliminar
-              </button>
+              aBorrar === p.id ? (
+                <>
+                  <span className="suave chico">¿Eliminar? No se puede deshacer.</span>
+                  <button className="btn secundario chico" onClick={() => setABorrar(null)}>
+                    No
+                  </button>
+                  <button
+                    className="btn peligro chico"
+                    onClick={() => {
+                      setABorrar(null);
+                      onEliminar(p.id);
+                    }}
+                  >
+                    Sí, eliminar
+                  </button>
+                </>
+              ) : (
+                <button className="link peligro" onClick={() => setABorrar(p.id)}>
+                  Eliminar
+                </button>
+              )
             }
           />
         ))
