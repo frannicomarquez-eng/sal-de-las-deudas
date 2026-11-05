@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   modoLocal,
+  modoClaude,
   SUCURSALES_DEFAULT,
   escucharUsuario,
   entrarConGoogle,
@@ -119,8 +120,12 @@ export default function App() {
 
   useEffect(() => {
     if (!usuario) return;
-    const u1 = suscribirPrestamos(setPrestamos, (e) =>
-      setError(e.code === "permission-denied" ? "Sin permiso para leer los préstamos. Revisá las reglas de Firestore (ver README)." : e.message),
+    const u1 = suscribirPrestamos(
+      (lista) => {
+        setPrestamos(lista);
+        setError((e) => (e.startsWith("Todavía no") ? "" : e));
+      },
+      (e) => setError(e.code === "permission-denied" ? "Sin permiso para leer los préstamos. Revisá las reglas de Firestore (ver README)." : e.message),
     );
     const u2 = suscribirConfig(setConfig);
     return () => {
@@ -140,14 +145,19 @@ export default function App() {
       await fn(...args);
       return true;
     } catch (e) {
-      setError("No se pudo guardar: " + (e.message || e));
+      const msg = e?.code === "invalid_argument" && modoClaude
+        ? "No tenés permiso para guardar. Pedile al dueño de la app que te invite como Editor."
+        : e?.code === "quota_exceeded"
+          ? "La base está llena. Eliminá préstamos viejos desde Historial."
+          : e?.message || String(e);
+      setError("No se pudo guardar: " + msg);
       return false;
     }
   };
 
   if (usuario === undefined) return <div className="centro"><div className="spinner" /></div>;
   if (!usuario) return <Login />;
-  if (!perfil || !sucursales.includes(perfil.sucursal))
+  if (!perfil?.sucursal)
     return <ElegirPerfil sucursales={sucursales} inicial={perfil} nombreSugerido={usuario.displayName}
         onListo={async (p, esNueva) => {
           if (esNueva && !(await conError(guardarConfig)({ sucursales: [...sucursales, p.sucursal] }))) return;
@@ -172,7 +182,14 @@ export default function App() {
         {modoLocal && <span className="etiqueta-prueba">Modo prueba</span>}
       </header>
 
-      {error && <div className="error-banner">{error}</div>}
+      {error && (
+        <div className="error-banner" role="alert">
+          <span>{error}</span>
+          <button className="link" onClick={() => setError("")}>
+            Cerrar
+          </button>
+        </div>
+      )}
 
       <main className="contenido">
         {tab === "pendientes" && (
@@ -956,7 +973,7 @@ function Ajustes({ perfil, sucursales, onPerfil, onSucursales, onSalir }) {
         <h2>Este dispositivo</h2>
         <Campo label="Sucursal">
           <select value={sucursal} onChange={(e) => setSucursal(e.target.value)}>
-            {sucursales.map((s) => (
+            {(sucursales.includes(perfil.sucursal) ? sucursales : [perfil.sucursal, ...sucursales]).map((s) => (
               <option key={s}>{s}</option>
             ))}
           </select>
@@ -1000,7 +1017,7 @@ function Ajustes({ perfil, sucursales, onPerfil, onSucursales, onSalir }) {
         </button>
       </div>
 
-      {!modoLocal && (
+      {!modoLocal && !modoClaude && (
         <button className="btn secundario" onClick={onSalir}>
           Cerrar sesión
         </button>
