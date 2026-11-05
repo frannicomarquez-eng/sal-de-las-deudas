@@ -276,3 +276,18 @@ textarea { resize: vertical; }
 .chip-color-nombre { padding: 7px 9px 0; font-family: var(--f-display); font-weight: 700; font-size: 13px; line-height: 1.2; overflow-wrap: anywhere; }
 .chip-color-n { padding: 2px 9px 8px; font-size: 12px; color: var(--soft); font-variant-numeric: tabular-nums; }
 .chip-color.activo { border-color: var(--text); box-shadow: 0 0 0 2px var(--text); }
+
+/* Fotos */
+.boton-foto { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.boton-foto .btn:not(.chico) { width: 100%; }
+.btn.deshabilitado { opacity: .5; pointer-events: none; }
+.miniaturas { display: flex; flex-wrap: wrap; gap: 8px; }
+.miniatura { position: relative; }
+.miniatura-img { display: block; width: 76px; height: 76px; padding: 0; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--surface-2); cursor: zoom-in; }
+.miniatura-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.miniatura-quitar { position: absolute; top: -7px; right: -7px; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--surface); background: var(--text); color: var(--surface); font-size: 15px; line-height: 1; cursor: pointer; display: grid; place-items: center; padding: 0; }
+.item-form + .btn, .detalle .boton-foto { margin-block: 4px; }
+.visor-fondo { align-items: center; padding-left: var(--gutter-l); padding-right: var(--gutter-r); }
+.visor { width: 100%; max-width: 900px; display: flex; flex-direction: column; gap: 10px; }
+.visor img { width: 100%; max-height: 74vh; object-fit: contain; border-radius: 12px; background: var(--surface); }
+.visor-barra { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center; background: var(--surface); padding: 10px; border-radius: 12px; }

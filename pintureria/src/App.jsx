@@ -10,11 +10,13 @@ import {
   crearPrestamo,
   actualizarPrestamo,
   eliminarPrestamo,
+  borrarFoto,
   suscribirConfig,
   guardarConfig,
 } from "./store.js";
 import { Muestra, MuestraSucursal, Logo, Icono } from "./visual.jsx";
 import { colorDeTono, colorSucursal } from "./colores.js";
+import { BotonFoto, Miniaturas, VisorFotos } from "./fotos.jsx";
 
 /* ================= Utilidades ================= */
 
@@ -218,7 +220,11 @@ export default function App() {
         )}
         {tab === "saldos" && <Saldos prestamos={prestamos} miSucursal={perfil.sucursal} />}
         {tab === "historial" && (
-          <Historial prestamos={prestamos} miSucursal={perfil.sucursal} onEliminar={conError(eliminarPrestamo)} />
+          <Historial prestamos={prestamos} miSucursal={perfil.sucursal} onEliminar={conError(async (p) => {
+              await eliminarPrestamo(p.id);
+              for (const f of p.fotos || []) await borrarFoto(f);
+            })}
+          />
         )}
         {tab === "ajustes" && (
           <Ajustes
@@ -444,6 +450,8 @@ function Pendientes({ prestamos, miSucursal, usuario, onDevolver, notificar }) {
             key={p.id}
             p={p}
             miSucursal={miSucursal}
+            usuario={usuario}
+            onActualizar={onDevolver}
             acciones={
               <>
                 <button className="btn primario chico" onClick={() => setDevolviendo(p)}>
@@ -475,8 +483,15 @@ function Pendientes({ prestamos, miSucursal, usuario, onDevolver, notificar }) {
   );
 }
 
-function TarjetaPrestamo({ p, miSucursal, acciones }) {
+function TarjetaPrestamo({ p, miSucursal, acciones, usuario, onActualizar }) {
   const [abierto, setAbierto] = useState(false);
+  const [visor, setVisor] = useState(null);
+  const fotos = p.fotos || [];
+  const agregarFoto = (f) =>
+    onActualizar(p.id, {
+      fotos: [...(p.fotos || []), f],
+      movimientos: [...(p.movimientos || []), { fecha: new Date().toISOString(), texto: `Foto agregada en ${miSucursal}`, usuario }],
+    });
   const estado = estadoDe(p);
   const dias = diasDesde(p.fecha);
   const atrasado = estado !== "devuelto" && dias >= DIAS_ALERTA;
@@ -529,6 +544,8 @@ function TarjetaPrestamo({ p, miSucursal, acciones }) {
           </li>
         ))}
       </ul>
+      <Miniaturas fotos={fotos} onAbrir={setVisor} />
+      {visor !== null && <VisorFotos fotos={fotos} inicial={visor} onCerrar={() => setVisor(null)} />}
       <button className="link" onClick={() => setAbierto(!abierto)}>
         {abierto ? "Ocultar detalle" : "Ver detalle"}
       </button>
@@ -537,6 +554,7 @@ function TarjetaPrestamo({ p, miSucursal, acciones }) {
           {p.entrega && <div>Entregó: <b>{p.entrega}</b></div>}
           {p.retira && <div>Retiró / recibió: <b>{p.retira}</b></div>}
           {p.notas && <div>Notas: {p.notas}</div>}
+          {onActualizar && <BotonFoto chico texto="Agregar foto" onSubida={agregarFoto} />}
           <div className="movimientos">
             {(p.movimientos || []).map((m, idx) => (
               <div key={idx} className="movimiento">
@@ -645,6 +663,8 @@ function NuevoPrestamo({ sucursales, miSucursal, usuario, prestamos, onGuardar }
   const [entrega, setEntrega] = useState(usuario);
   const [retira, setRetira] = useState("");
   const [notas, setNotas] = useState("");
+  const [fotos, setFotos] = useState([]);
+  const [visor, setVisor] = useState(null);
   const [guardando, setGuardando] = useState(false);
 
   const productosConocidos = useMemo(() => {
@@ -675,6 +695,7 @@ function NuevoPrestamo({ sucursales, miSucursal, usuario, prestamos, onGuardar }
       entrega: entrega.trim(),
       retira: retira.trim(),
       notas: notas.trim(),
+      fotos,
       creadoPor: usuario,
       creadoEn: miSucursal,
       movimientos: [{ fecha: ahora, texto: `Préstamo registrado en ${miSucursal}`, usuario }],
@@ -755,6 +776,19 @@ function NuevoPrestamo({ sucursales, miSucursal, usuario, prestamos, onGuardar }
       <button className="btn secundario" onClick={() => setItems([...items, nuevoItem()])}>
         + Agregar otro producto
       </button>
+
+      <h3>Fotos del presupuesto o remito</h3>
+      <p className="ayuda">Sacale una foto al presupuesto. Se guarda con el préstamo y se ve desde cualquier compu o celular.</p>
+      <Miniaturas
+        fotos={fotos}
+        onAbrir={setVisor}
+        onQuitar={(idx) => {
+          borrarFoto(fotos[idx]);
+          setFotos(fotos.filter((_, j) => j !== idx));
+        }}
+      />
+      {visor !== null && <VisorFotos fotos={fotos} inicial={visor} onCerrar={() => setVisor(null)} />}
+      <BotonFoto onSubida={(f) => setFotos((prev) => [...prev, f])} />
 
       <h3>Datos del traslado</h3>
       <div className="fila-2">
@@ -933,7 +967,7 @@ function Historial({ prestamos, miSucursal, onEliminar }) {
                     className="btn peligro chico"
                     onClick={() => {
                       setABorrar(null);
-                      onEliminar(p.id);
+                      onEliminar(p);
                     }}
                   >
                     Sí, eliminar

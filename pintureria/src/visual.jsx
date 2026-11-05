@@ -33,6 +33,7 @@ const TRAZOS = {
   flecha: "M5 12h14M13 6l6 6-6 6",
   alerta: "M12 4l9 16H3zM12 10v4M12 17v.5",
   vacio: "M6 4h12v16H6zM9 8h6M9 12h6",
+  camara: "M4 8h3l2-3h6l2 3h3v11H4zM12 17a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z",
 };
 
 export function Icono({ nombre, tam = 22 }) {

@@ -243,3 +243,89 @@ export async function guardarConfig(config) {
   }
   await setDoc(doc(db, ...DOC_CONFIG), config, { merge: true });
 }
+
+/* ---------- Fotos (presupuestos, remitos) ---------- */
+
+let promesaAssets = null;
+function baseFotos() {
+  if (!promesaAssets) promesaAssets = window.claude?.use ? window.claude.use("assets") : Promise.resolve(null);
+  return promesaAssets;
+}
+
+// En claude.ai solo pueden subir fotos quienes tienen permiso de Editor.
+export async function puedeSubirFotos() {
+  if (!modoClaude) return true;
+  return !!(await baseFotos());
+}
+
+// Achica la foto antes de subirla: las del celular pesan varios MB.
+async function achicar(file, maxLado, calidad) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, mal) => {
+      const i = new Image();
+      i.onload = () => ok(i);
+      i.onerror = mal;
+      i.src = url;
+    });
+    const escala = Math.min(1, maxLado / Math.max(img.naturalWidth, img.naturalHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(img.naturalWidth * escala);
+    canvas.height = Math.round(img.naturalHeight * escala);
+    canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+    return await new Promise((ok) => canvas.toBlob(ok, "image/jpeg", calidad));
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+const aDataUrl = (blob) =>
+  new Promise((ok, mal) => {
+    const r = new FileReader();
+    r.onload = () => ok(r.result);
+    r.onerror = mal;
+    r.readAsDataURL(blob);
+  });
+
+export async function subirFoto(file) {
+  const fecha = new Date().toISOString();
+  if (modoClaude) {
+    const assets = await baseFotos();
+    if (!assets) throw new Error("No tenés permiso para subir fotos. Pedile al dueño de la app que te invite como Editor.");
+    let subida = file;
+    try {
+      subida = (await achicar(file, 2000, 0.82)) || file;
+    } catch {
+      /* si no se puede achicar, se sube la original */
+    }
+    try {
+      const r = await assets.upload(subida, { type: subida.type || "image/jpeg" });
+      return { id: r.id, fecha };
+    } catch (e) {
+      const msg = {
+        too_large: "La foto es demasiado grande.",
+        unsupported_type: "Ese tipo de archivo no se puede subir. Usá una foto JPG o PNG.",
+        quota_or_state: "Se llenó el espacio para fotos. Eliminá préstamos viejos con fotos.",
+        rate_limited: "Subiste muchas fotos seguidas. Esperá un momento y probá de nuevo.",
+      }[e?.code];
+      throw new Error(msg || "No se pudo subir la foto. Probá de nuevo.", { cause: e });
+    }
+  }
+  // Modo prueba o Firebase: la foto va dentro del préstamo, más chica.
+  const blob = await achicar(file, 1100, 0.6);
+  return { src: await aDataUrl(blob), fecha };
+}
+
+export function srcFoto(f) {
+  return f.id ? "/_blob/" + f.id : f.src;
+}
+
+export async function borrarFoto(f) {
+  if (!f?.id || !modoClaude) return;
+  try {
+    const assets = await baseFotos();
+    await assets?.delete(f.id);
+  } catch {
+    /* si no se puede borrar el archivo, igual se quita del préstamo */
+  }
+}
