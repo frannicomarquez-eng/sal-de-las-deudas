@@ -12,6 +12,8 @@ import {
   suscribirConfig,
   guardarConfig,
 } from "./store.js";
+import { Muestra, MuestraSucursal, Logo, Icono } from "./visual.jsx";
+import { colorDeTono } from "./colores.js";
 
 /* ================= Utilidades ================= */
 
@@ -158,11 +160,14 @@ export default function App() {
   return (
     <div className="app">
       <header className="cabecera">
-        <div>
-          <div className="marca">Préstamos entre sucursales</div>
-          <button className="chip-sucursal" onClick={() => setTab("ajustes")} title="Cambiar sucursal">
-            📍 {perfil.sucursal} · {usuarioTxt}
-          </button>
+        <div className="cabecera-marca">
+          <Logo tam={34} />
+          <div>
+            <div className="marca">Préstamos entre sucursales</div>
+            <button className="chip-sucursal" onClick={() => setTab("ajustes")} title="Cambiar sucursal">
+              <MuestraSucursal nombre={perfil.sucursal} /> {perfil.sucursal} · {usuarioTxt}
+            </button>
+          </div>
         </div>
         {modoLocal && <span className="etiqueta-prueba">MODO PRUEBA</span>}
       </header>
@@ -222,14 +227,14 @@ export default function App() {
 
       <nav className="tabs">
         {[
-          ["pendientes", "📦", "Pendientes"],
-          ["nuevo", "➕", "Nuevo"],
-          ["saldos", "⚖️", "Saldos"],
-          ["historial", "🗂️", "Historial"],
-          ["ajustes", "⚙️", "Ajustes"],
+          ["pendientes", "pendientes", "Pendientes"],
+          ["nuevo", "nuevo", "Nuevo"],
+          ["saldos", "saldos", "Saldos"],
+          ["historial", "historial", "Historial"],
+          ["ajustes", "ajustes", "Ajustes"],
         ].map(([id, ic, txt]) => (
           <button key={id} className={tab === id ? "activo" : ""} onClick={() => setTab(id)}>
-            <span className="tab-icono">{ic}</span>
+            <span className="tab-icono"><Icono nombre={ic} /></span>
             {txt}
           </button>
         ))}
@@ -246,7 +251,7 @@ function Login() {
   return (
     <div className="centro">
       <div className="tarjeta acceso">
-        <div className="logo">🎨</div>
+        <Logo tam={64} />
         <h1>Préstamos entre sucursales</h1>
         <p className="suave">Registrá qué productos se prestan entre sucursales y controlá que vuelvan.</p>
         <button
@@ -280,7 +285,7 @@ function ElegirPerfil({ sucursales, inicial, nombreSugerido, onListo }) {
   return (
     <div className="centro">
       <div className="tarjeta acceso">
-        <div className="logo">📍</div>
+        <Logo tam={64} />
         <h1>¿En qué sucursal estás?</h1>
         <p className="suave">Se guarda en este dispositivo. Podés cambiarla después en Ajustes.</p>
         <Campo label="Sucursal">
@@ -345,7 +350,7 @@ function Segmentado({ opciones, valor, onChange }) {
 function Vacio({ icono, texto }) {
   return (
     <div className="vacio">
-      <div className="vacio-icono">{icono}</div>
+      <div className="vacio-icono"><Icono nombre={icono} tam={36} /></div>
       <p>{texto}</p>
     </div>
   );
@@ -378,7 +383,7 @@ function Pendientes({ prestamos, miSucursal, usuario, onDevolver, notificar }) {
           : "Productos que te prestaron otras sucursales y tenés que devolver."}
       </p>
       {lista.length === 0 ? (
-        <Vacio icono="✅" texto="No hay nada pendiente acá." />
+        <Vacio icono="vacio" texto="No hay nada pendiente acá." />
       ) : (
         lista.map((p) => (
           <TarjetaPrestamo
@@ -421,29 +426,46 @@ function TarjetaPrestamo({ p, miSucursal, acciones }) {
   const estado = estadoDe(p);
   const dias = diasDesde(p.fecha);
   const atrasado = estado !== "devuelto" && dias >= DIAS_ALERTA;
-  const otra = p.origen === miSucursal ? p.destino : p.origen;
-  const direccion = p.origen === miSucursal ? "→" : p.destino === miSucursal ? "←" : "";
 
   return (
     <article className={`tarjeta prestamo ${atrasado ? "atrasado" : ""}`}>
       <div className="prestamo-cabecera">
         <div>
-          <div className="prestamo-titulo">
-            {direccion ? `${direccion} ${otra}` : `${p.origen} → ${p.destino}`}
+          <div className="ruta">
+            <span className={`ruta-punto ${p.origen === miSucursal ? "propia" : ""}`}>
+              <MuestraSucursal nombre={p.origen} grande /> {p.origen}
+            </span>
+            <Icono nombre="flecha" tam={16} />
+            <span className={`ruta-punto ${p.destino === miSucursal ? "propia" : ""}`}>
+              <MuestraSucursal nombre={p.destino} grande /> {p.destino}
+            </span>
           </div>
           <div className="suave chico">
             {fechaCorta(p.fecha)} · hace {dias === 0 ? "menos de 1 día" : `${dias} día${dias === 1 ? "" : "s"}`}
           </div>
         </div>
-        <span className={`estado ${estado} ${atrasado ? "alerta" : ""}`}>{atrasado ? `⚠ ${dias} días` : ETIQUETA_ESTADO[estado]}</span>
+        <span className={`estado ${estado} ${atrasado ? "alerta" : ""}`}>{atrasado ? <><Icono nombre="alerta" tam={13} /> {dias} días</> : ETIQUETA_ESTADO[estado]}</span>
       </div>
       <ul className="items">
         {p.items.map((i) => (
           <li key={i.id} className={(i.devuelto || 0) >= i.cantidad ? "tachado" : ""}>
-            <span>
-              <b>{i.cantidad}</b> × {i.unidad} — {i.producto}
-              {i.color && <span className="suave"> · {i.color}</span>}
-              {i.codigo && <span className="codigo">{i.codigo}</span>}
+            <span className="item-cant">
+              <b>{i.cantidad}</b>
+              <small>{i.unidad}</small>
+            </span>
+            <span className="item-desc">
+              <span>{i.producto}</span>
+              {(i.color || i.codigo) && (
+                <span className="item-meta">
+                  {i.color && (
+                    <span className="tono">
+                      {colorDeTono(i.color) && <Muestra color={colorDeTono(i.color)} />}
+                      {i.color}
+                    </span>
+                  )}
+                  {i.codigo && <span className="codigo">{i.codigo}</span>}
+                </span>
+              )}
             </span>
             {i.devuelto > 0 && (
               <span className="devuelto-badge">
@@ -636,7 +658,12 @@ function NuevoPrestamo({ sucursales, miSucursal, usuario, prestamos, onGuardar }
       {esNueva && <p className="ayuda">“{otra}” no está en la lista: se va a agregar al guardar.</p>}
       {otra && !esMia && (
         <div className="resumen-sentido">
-          {sentido === "enviamos" ? `${miSucursal} → ${otra}` : `${otra} → ${miSucursal}`}
+          {(sentido === "enviamos" ? [miSucursal, otra] : [otra, miSucursal]).map((n, idx) => (
+            <span key={n + idx} className="ruta-punto">
+              {idx === 1 && <Icono nombre="flecha" tam={16} />}
+              <MuestraSucursal nombre={n} grande /> {n}
+            </span>
+          ))}
         </div>
       )}
 
@@ -732,9 +759,20 @@ function Saldos({ prestamos, miSucursal }) {
       <ul className="items compacto">
         {items.map((i, idx) => (
           <li key={idx}>
-            <span>
-              <b>{i.cantidad}</b> × {i.unidad} — {i.producto}
-              {i.color && <span className="suave"> · {i.color}</span>}
+            <span className="item-cant">
+              <b>{i.cantidad}</b>
+              <small>{i.unidad}</small>
+            </span>
+            <span className="item-desc">
+              <span>{i.producto}</span>
+              {i.color && (
+                <span className="item-meta">
+                  <span className="tono">
+                    {colorDeTono(i.color) && <Muestra color={colorDeTono(i.color)} />}
+                    {i.color}
+                  </span>
+                </span>
+              )}
             </span>
           </li>
         ))}
@@ -744,10 +782,10 @@ function Saldos({ prestamos, miSucursal }) {
   return (
     <>
       <p className="ayuda">Sucursales con algo pendiente con {miSucursal}, sumado por producto.</p>
-      {porSucursal.length === 0 && <Vacio icono="⚖️" texto="No hay nada pendiente con ninguna sucursal." />}
+      {porSucursal.length === 0 && <Vacio icono="saldos" texto="No hay nada pendiente con ninguna sucursal." />}
       {porSucursal.map(({ s, nosDeben, debemos }) => (
         <div key={s} className="tarjeta">
-          <h2>{s}</h2>
+          <h2 className="con-muestra"><MuestraSucursal nombre={s} grande /> {s}</h2>
           <div className="saldo-columnas">
             <div className="saldo nos-deben">
               <div className="saldo-titulo">Nos deben</div>
@@ -813,17 +851,17 @@ function Historial({ prestamos, miSucursal, onEliminar }) {
               )
             }
           >
-            📋 Copiar para Excel
+            <Icono nombre="copiar" tam={18} /> Copiar para Excel
           </button>
           {!enPaginaClaude && (
             <button className="btn secundario chico" disabled={!lista.length} onClick={() => exportarCSV(lista)}>
-              ⬇ Descargar CSV
+              <Icono nombre="descargar" tam={18} /> Descargar CSV
             </button>
           )}
         </div>
       </div>
       {lista.length === 0 ? (
-        <Vacio icono="🗂️" texto="No hay préstamos con esos filtros." />
+        <Vacio icono="historial" texto="No hay préstamos con esos filtros." />
       ) : (
         lista.map((p) => (
           <TarjetaPrestamo
