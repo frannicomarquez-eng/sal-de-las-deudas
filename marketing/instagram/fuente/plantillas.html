@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Plantillas Instagram Brote</title>
+<style>
+  @font-face { font-family: 'FrauncesB'; src: url('../../../marca/brote/fuente/fraunces_safari.ttf'); font-weight: 100 900; }
+  @font-face { font-family: 'InterB'; src: url('../../../marca/brote/fuente/inter.ttf'); font-weight: 100 900; }
+  :root { --green:#2F4A3A; --sage:#8FAE8B; --cream:#F6F2EA; --sand:#E7D9CC; --muted:#5C6B60; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #ddd; display: flex; flex-direction: column; gap: 40px; padding: 40px; }
+  .art { position: relative; overflow: hidden; background: var(--cream); color: var(--green); font-family: InterB, sans-serif; }
+  .post { width: 1080px; height: 1350px; }
+  .story { width: 1080px; height: 1920px; }
+  .hl { width: 1080px; height: 1080px; display: flex; align-items: center; justify-content: center; }
+  .serif { font-family: FrauncesB, serif; font-weight: 300; font-variation-settings: 'opsz' 72; letter-spacing: 0; word-spacing: .04em; }
+  .serif.big { font-variation-settings: 'opsz' 120; letter-spacing: -0.008em; }
+  .eyebrow { font-size: 26px; letter-spacing: .3em; text-transform: uppercase; color: var(--muted); }
+  .center { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .foot { position: absolute; left: 90px; right: 90px; bottom: 70px; display: flex; justify-content: space-between; align-items: center; font-size: 26px; color: var(--muted); }
+  .foot img { height: 96px; }
+  .rule { width: 80px; height: 2px; background: var(--sage); }
+  .pill { border: 2px solid var(--green); border-radius: 60px; padding: 18px 40px; font-size: 30px; }
+</style>
+</head>
+<body>
+
+<!-- 1. Presentación -->
+<section class="art post center" data-shot="01-presentacion">
+  <img src="../../../marca/brote/svg/brote-logo-verde.svg" style="width: 640px" alt="Brote, ropa de bebé">
+  <div class="rule" style="margin: 70px 0 60px"></div>
+  <p class="serif" style="font-size: 58px; line-height: 1.25; margin: 0 70px">Ropa para los primeros meses.<br>Lo justo, suave y listo para regalar.</p>
+  <p style="font-size: 30px; color: var(--muted); margin-top: 60px">Hola, somos Brote 🌱</p>
+</section>
+
+<!-- 2. Portada de carrusel (guía) -->
+<section class="art post" data-shot="02-portada-carrusel" style="padding: 110px 90px">
+  <div class="eyebrow">Guía · Talles</div>
+  <h1 class="serif big" style="font-size: 132px; line-height: 1.02; margin: 50px 0 0">¿Qué talle<br>le compro<br>a mi bebé?</h1>
+  <p style="font-size: 38px; line-height: 1.45; color: #3E4A42; margin-top: 60px; max-width: 760px">Dónde se pierde más plata cuando armás el ajuar, y cómo evitarlo.</p>
+  <div style="position: absolute; left: 90px; bottom: 190px; display: flex; align-items: center; gap: 20px; font-size: 30px; color: var(--muted)">Deslizá <span style="font-size: 40px; color: var(--green)">→</span></div>
+  <div class="foot"><span>Guardalo para después</span><img src="../../../marca/brote/svg/brote-logo-sin-bajada.svg" alt=""></div>
+</section>
+
+<!-- 3. Slide interior de carrusel -->
+<section class="art post" data-shot="03-slide-interior" style="padding: 110px 90px; background: #fff">
+  <div class="eyebrow">02</div>
+  <h2 class="serif" style="font-size: 92px; line-height: 1.08; margin: 40px 0 70px">Repartí la compra así</h2>
+  <div style="display: flex; flex-direction: column; gap: 28px">
+    <div style="display: flex; align-items: center; gap: 40px; background: var(--cream); border-radius: 28px; padding: 40px 50px"><span class="serif" style="font-size: 84px; width: 210px">RN</span><span style="font-size: 36px">20% de la lista</span></div>
+    <div style="display: flex; align-items: center; gap: 40px; background: var(--cream); border-radius: 28px; padding: 40px 50px"><span class="serif" style="font-size: 84px; width: 210px">0–3</span><span style="font-size: 36px">50% de la lista</span></div>
+    <div style="display: flex; align-items: center; gap: 40px; background: var(--cream); border-radius: 28px; padding: 40px 50px"><span class="serif" style="font-size: 84px; width: 210px">3–6</span><span style="font-size: 36px">30% de la lista</span></div>
+  </div>
+  <p style="font-size: 32px; line-height: 1.45; color: var(--muted); margin-top: 50px">El talle RN se usa pocas semanas. Algunos bebés nacen directo en 0–3.</p>
+  <div class="foot"><span>Comentá AJUAR y te mando la guía</span><img src="../../../marca/brote/svg/brote-logo-sin-bajada.svg" alt=""></div>
+</section>
+
+<!-- 4. Garantía -->
+<section class="art post center" data-shot="04-garantia" style="background: var(--green); color: var(--cream)">
+  <div class="eyebrow" style="color: #B9CDB5">Nuestra garantía</div>
+  <h2 class="serif big" style="font-size: 120px; line-height: 1.04; margin: 50px 90px 0; color: var(--cream)">¿No le queda?<br>Lo cambiamos.</h2>
+  <div style="width: 80px; height: 2px; background: #8FAE8B; margin: 70px 0"></div>
+  <p style="font-size: 40px; line-height: 1.5; margin: 0 140px; color: #E9EFE6">Hasta 90 días.<br>Sin uso y con etiqueta.<br>Aunque la caja esté abierta.</p>
+  <img src="../../../marca/brote/svg/brote-logo-sin-bajada-crema.svg" style="position: absolute; bottom: 70px; height: 110px" alt="">
+</section>
+
+<!-- 5. Historia: pregunta -->
+<section class="art story center" data-shot="05-historia-pregunta">
+  <img src="../../../marca/brote/svg/brote-isotipo.svg" style="width: 150px" alt="">
+  <h2 class="serif" style="font-size: 104px; line-height: 1.08; margin: 60px 100px 0">¿Para cuándo<br>es tu bebé?</h2>
+  <div style="margin-top: 90px; width: 760px; height: 300px; border: 2px dashed var(--sage); border-radius: 40px; display: flex; align-items: center; justify-content: center; font-size: 30px; color: var(--muted)">Acá va el sticker de pregunta</div>
+  <img src="../../../marca/brote/svg/brote-logo-verde.svg" style="position: absolute; bottom: 140px; width: 300px" alt="">
+</section>
+
+<!-- 6-11. Portadas de destacadas -->
+<section class="art hl" data-shot="destacada-cajas"><svg width="420" height="420" viewBox="0 0 64 64" fill="none" stroke="#2F4A3A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="12" y="26" width="40" height="26" rx="1.5"/><rect x="9" y="19" width="46" height="8" rx="1.5"/><path d="M32 19 V52"/><path d="M32 19 C26 10 18 13 22 18 C24 20 30 19 32 19 C34 19 40 20 42 18 C46 13 38 10 32 19 Z"/></svg></section>
+<section class="art hl" data-shot="destacada-talles"><svg width="420" height="420" viewBox="0 0 64 64" fill="none" stroke="#2F4A3A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 26 L22 12 H42 L54 26 L46 31 V54 H18 V31 Z"/><path d="M26 12 C26 17 38 17 38 12"/><path d="M27 42 H37"/></svg></section>
+<section class="art hl" data-shot="destacada-guia"><svg width="420" height="420" viewBox="0 0 64 64" fill="none" stroke="#2F4A3A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M32 18 C26 14 18 14 10 16 V50 C18 48 26 48 32 52 C38 48 46 48 54 50 V16 C46 14 38 14 32 18 Z"/><path d="M32 18 V52"/></svg></section>
+<section class="art hl" data-shot="destacada-envios"><svg width="420" height="420" viewBox="0 0 64 64" fill="none" stroke="#2F4A3A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 20 H38 V44 H6 Z"/><path d="M38 28 H50 L58 36 V44 H38"/><circle cx="16" cy="46" r="4" fill="#F6F2EA"/><circle cx="48" cy="46" r="4" fill="#F6F2EA"/></svg></section>
+<section class="art hl" data-shot="destacada-clientas"><svg width="420" height="420" viewBox="0 0 64 64" fill="none" stroke="#2F4A3A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M32 52 C20 43 10 35 10 25 C10 18 15 13 21 13 C26 13 30 16 32 20 C34 16 38 13 43 13 C49 13 54 18 54 25 C54 35 44 43 32 52 Z"/></svg></section>
+<section class="art hl" data-shot="destacada-como-comprar"><svg width="420" height="420" viewBox="0 0 64 64" fill="none" stroke="#2F4A3A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14 H54 V42 H26 L16 51 V42 H10 Z"/><path d="M20 25 H44"/><path d="M20 32 H36"/></svg></section>
+<section class="art hl" data-shot="destacada-brote"><img src="../../../marca/brote/svg/brote-isotipo.svg" style="width: 420px" alt=""></section>
+
+</body>
+</html>
