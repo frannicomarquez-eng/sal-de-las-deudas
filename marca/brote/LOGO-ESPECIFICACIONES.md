@@ -13,3 +13,11 @@ Este es el logo elegido (concepto B, "clásico apilado"). Todo lo que use el log
 | Fondo crema | #F6F2EA |
 
 El texto está convertido a curvas en los SVG: imprenta, bordado y etiquetas no necesitan tener la fuente instalada.
+
+## Logo aprobado
+
+Aprobado como definitivo. Para regenerar los archivos exactamente iguales:
+
+    python3 marca/brote/fuente/make_logo.py marca/brote/fuente marca/brote/svg
+
+Requiere `pip install fonttools uharfbuzz`. Las fuentes de `fuente/` son de licencia libre (SIL Open Font License).
