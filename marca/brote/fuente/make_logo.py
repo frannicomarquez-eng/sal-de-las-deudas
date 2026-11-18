@@ -52,7 +52,7 @@ WORD_SIZE = 136
 TRACK = -0.027  # espaciado medido sobre la captura del diseño elegido
 word_d, word_w = text_path(fr_font, fr_bytes, 'Brote', WORD_SIZE, TRACK)
 TAG_SIZE, TAG_TRACK = 13, 0.36
-tag_d, tag_w = text_path(in_font, in_bytes, 'ROPA DE BEBÉ', TAG_SIZE, TAG_TRACK)
+tag_d, tag_w = text_path(in_font, in_bytes, 'CRECE CON VOS', TAG_SIZE, TAG_TRACK)
 tag_box = tag_w + TAG_TRACK * TAG_SIZE  # el navegador suma el espaciado también después de la última letra
 cap = fr_font['OS/2'].sCapHeight * WORD_SIZE / fr_font['head'].unitsPerEm
 
