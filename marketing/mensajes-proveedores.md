@@ -14,7 +14,7 @@ Copiá, completá lo que está entre corchetes y mandalo. Guardá las respuestas
 > 1. ¿Fabrican con la etiqueta de otra marca, o venden prendas sin etiqueta? ¿Desde qué cantidad?
 > 2. ¿Qué talles tienen? Busco recién nacido, 0–3 y 3–6 meses.
 > 3. ¿La tela es 100% algodón pima? ¿Me lo pueden confirmar por escrito o en la factura?
-> 4. El mínimo de compra sigue siendo $100.000?
+> 4. ¿El mínimo de compra sigue siendo $100.000?
 > 5. ¿Puedo ir a ver las prendas en persona antes de comprar?
 >
 > ¡Muchas gracias!
