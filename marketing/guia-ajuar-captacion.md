@@ -1,7 +1,7 @@
 # Guía "Ajuar sin desperdicio": cómo usarla para juntar contactos
 
 El PDF está en `marketing/Guia Ajuar sin desperdicio - Brote.pdf`.
-Antes de usarlo, reemplazá `[TU NÚMERO]` en la última página.
+WhatsApp de contacto en la última página: 351 622-6335.
 
 **Problema que resuelve:** "No sé qué ropa comprar para mi bebé ni en qué talle."
 **Problema que deja abierto:** "Ya sé qué necesito. ¿Dónde lo consigo lindo, de buena tela y listo?" → Caja Primer Brote.
