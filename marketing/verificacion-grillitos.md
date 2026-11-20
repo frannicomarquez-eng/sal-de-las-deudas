@@ -14,6 +14,13 @@ Revisión del 20/11/2026 con el catálogo PDF "Grillitos Baby Clothes Outlet dis
 
 Teléfono y mail que figuran en Facebook: +54 11 5045-0548 · grillitosarg@gmail.com.
 
+## Captura del perfil de Instagram (20/11)
+
+- 1.332 publicaciones, 54,7 mil seguidores, sigue a 94: cuenta grande y con años de actividad.
+- Bio: "¡Somos fabricantes! Ropa de bebé (0-24 meses)", horario de atención, la misma dirección de Concordia 232 y grillitos.com.ar.
+- Destacadas: Ustedes (clientas), WhatsApp, Mayorista, Envíos, Compra.
+- Conclusión: es la cuenta oficial de la marca, no una copia. Sus talles 0 a 5 son de 0 a 24 meses (confirmar la equivalencia).
+
 ## Lo que no se pudo verificar
 
 - Opiniones o reclamos de clientes: no aparece nada, ni bueno ni malo.
