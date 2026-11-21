@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Sellos Brote</title>
+<style>
+  /* Sellos a tamaño real (mm). Un solo color: negro. Logo desde los archivos oficiales. */
+  @font-face { font-family: 'InterB'; src: url('../../brote/fuente/inter.ttf'); font-weight: 100 900; }
+  @page { size: A4; margin: 0; }
+  body { margin: 0; font-family: InterB, sans-serif; }
+  .sheet { width: 210mm; height: 297mm; padding: 16mm; box-sizing: border-box; }
+  h1 { font-size: 16pt; font-weight: 500; margin: 0 0 2mm; }
+  .note { font-size: 8.5pt; color: #444; margin: 0 0 8mm; line-height: 1.45; }
+  .row { display: flex; gap: 14mm; align-items: flex-end; flex-wrap: wrap; margin-bottom: 12mm; }
+  .cap { font-size: 8pt; color: #444; margin-top: 3mm; }
+  .stamp { background: transparent; }
+  .rect { width: 60mm; height: 44mm; display: flex; align-items: center; justify-content: center; border: .9mm solid #000; border-radius: 3mm; box-sizing: border-box; }
+  .rect img { height: 40mm; }
+  .round { width: 50mm; height: 50mm; position: relative; }
+  .round svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .round img { position: absolute; left: 50%; top: 50%; width: 30mm; transform: translate(-50%, -52%); }
+  .mini { width: 25mm; height: 25mm; border-radius: 50%; border: .7mm solid #000; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
+  .mini img { width: 16mm; }
+</style>
+</head>
+<body>
+<section class="sheet">
+  <h1>Sellos Brote — tamaño real</h1>
+  <p class="note">Imprimí al 100%. Todo en un solo color (negro): la casa de sellos lo convierte en goma y vos elegís la tinta. Para la bolsa kraft o blanca, tinta verde oscuro o negra.</p>
+
+  <div class="row">
+    <div>
+      <div class="stamp round" data-shot="sello-redondo-50mm"><img src="sello-redondo-50mm.svg" alt="Sello redondo Brote" style="position:absolute;inset:0;width:100%;height:100%;transform:none;left:0;top:0"></div>
+      <div class="cap">A · Redondo 50 mm (recomendado para la bolsa)</div>
+    </div>
+    <div>
+      <div class="stamp rect" data-shot="sello-rectangular-60x44mm"><img src="brote-logo-negro.svg" alt="Brote, crece con vos"></div>
+      <div class="cap">B · Rectangular 60 × 44 mm (logo oficial completo)</div>
+    </div>
+    <div>
+      <div class="stamp mini" data-shot="sello-mini-25mm"><img src="brote-isotipo-negro.svg" alt="Brote"></div>
+      <div class="cap">C · Mini 25 mm (papel de seda, tarjetas, sobres)</div>
+    </div>
+  </div>
+</section>
+</body>
+</html>
