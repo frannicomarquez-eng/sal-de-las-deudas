@@ -21,7 +21,6 @@ Precios de costo del catálogo "Grillitos Outlet discontinuos" PV 2026 (confirma
 | Romper Wens (wafle con volados) | $8.500 | $17.900 | $9.400 |
 | Jardinero Bibs | $5.000 | $10.900 | $5.900 |
 | Remera Cala | $4.500 | $9.900 | $5.400 |
-| Short Zuri | $7.000 | $14.900 | $7.900 |
 | Pants Lula (bambula) | $6.500 | $13.900 | $7.400 |
 | Pants Denver (cargo) | $6.800 | $14.900 | $8.100 |
 | Leggings Erin | $5.600 | $11.900 | $6.300 |
