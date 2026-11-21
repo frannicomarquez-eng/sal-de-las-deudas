@@ -9,7 +9,7 @@ from fontTools.pens.transformPen import TransformPen
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, '..', '..'))
-TEXTO = 'CRECE CON VOS · ROPA DE 0 A 8 AÑOS · CÓRDOBA · '
+TEXTO = '· CRECE CON VOS ·'   # una sola vez, centrado arriba
 SIZE, R_TEXT = 30, 190          # unidades del viewBox 500x500 (= 50 mm)
 
 f = instantiateVariableFont(TTFont(os.path.join(ROOT, 'brote', 'fuente', 'inter.ttf')), {'opsz': 14, 'wght': 500})
@@ -19,13 +19,13 @@ gs = f.getGlyphSet(); cmap = f.getBestCmap(); hmtx = f['hmtx']
 # Letra por letra desde el mapa de caracteres: así la Ñ y la Ó salen enteras (sin separar el acento).
 glyphs = [(cmap[ord(c)], hmtx[cmap[ord(c)]][0] * s) for c in TEXTO]
 natural = sum(a for _, a in glyphs)
-circ = 2 * math.pi * R_TEXT
-extra = (circ - natural) / len(glyphs)   # reparte el espacio sobrante para cerrar el círculo
+extra = SIZE * 0.42                     # espaciado entre letras
+total = natural + extra * (len(glyphs) - 1)
 
-paths, dist = [], 0.0
+paths, dist = [], -total / 2             # centrado arriba
 for name, adv in glyphs:
     mid = dist + adv / 2
-    ang = mid / R_TEXT - math.pi / 2         # empieza arriba, sentido horario
+    ang = mid / R_TEXT - math.pi / 2         # arco superior, sentido horario
     cx, cy = 250 + R_TEXT * math.cos(ang), 250 + R_TEXT * math.sin(ang)
     rot = math.degrees(ang) + 90
     pen = SVGPathPen(gs)
@@ -39,7 +39,7 @@ logo = open(os.path.join(ROOT, 'brote', 'svg', 'brote-logo-sin-bajada.svg')).rea
 logo = logo.replace('#2F4A3A', '#000000')
 w, h = map(float, re.search(r'viewBox="0 0 ([\d.]+) ([\d.]+)"', logo).groups())
 lw = 290; lh = lw * h / w
-logo = re.sub(r'<svg [^>]*>', f'<svg x="{250 - lw / 2:.2f}" y="{250 - lh / 2 - 6:.2f}" width="{lw}" height="{lh:.2f}" viewBox="0 0 {w} {h}">', logo, count=1)
+logo = re.sub(r'<svg [^>]*>', f'<svg x="{250 - lw / 2:.2f}" y="{250 - lh / 2 + 22:.2f}" width="{lw}" height="{lh:.2f}" viewBox="0 0 {w} {h}">', logo, count=1)
 
 svg = (f'<svg xmlns="http://www.w3.org/2000/svg" width="50mm" height="50mm" viewBox="0 0 500 500">'
        f'<circle cx="250" cy="250" r="242" fill="none" stroke="#000" stroke-width="9"/>'
