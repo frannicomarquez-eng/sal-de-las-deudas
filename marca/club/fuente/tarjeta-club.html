@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Tarjeta Club Brote</title>
+<style>
+  /* Tarjeta para el paquete, 90 × 55 mm (tamaño tarjeta personal), frente y dorso. Logo y QR desde archivos oficiales. */
+  @font-face { font-family: 'FrauncesB'; src: url('../../brote/fuente/fraunces_safari.ttf'); font-weight: 100 900; }
+  @font-face { font-family: 'InterB'; src: url('../../brote/fuente/inter.ttf'); font-weight: 100 900; }
+  @page { size: A4; margin: 0; }
+  :root { --green:#2F4A3A; --cream:#F6F2EA; --muted:#5C6B60; --sage:#8FAE8B; --line:#D9D0C0; }
+  body { margin: 0; font-family: InterB, sans-serif; }
+  .sheet { width: 210mm; height: 297mm; padding: 16mm; box-sizing: border-box; }
+  h1 { font-size: 15pt; font-weight: 500; margin: 0 0 2mm; color: #222; }
+  .note { font-size: 8.5pt; color: #444; margin: 0 0 8mm; line-height: 1.45; }
+  .row { display: flex; gap: 10mm; flex-wrap: wrap; }
+  .cut { outline: .2mm dashed #aaa; outline-offset: 2mm; }
+  .card { width: 90mm; height: 55mm; box-sizing: border-box; border-radius: 2mm; position: relative; }
+  .front { background: var(--green); color: var(--cream); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4mm 7mm; text-align: center; }
+  .front .t { font-size: 8pt; letter-spacing: .4em; text-transform: uppercase; margin-top: 1mm; padding-left: .4em; }
+  .front .s { font-size: 6.5pt; letter-spacing: .14em; text-transform: uppercase; color: #CFDBCB; margin-top: 2mm; }
+  .front img { height: 30mm; }
+  .back { background: var(--cream); color: var(--green); padding: 5mm 6mm; display: grid; grid-template-columns: 1fr 19mm; gap: 4mm; }
+  .back .k { font-size: 6pt; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  .line { border-bottom: .3mm solid var(--green); height: 6.5mm; margin-bottom: 1.8mm; }
+  .lab { display: flex; align-items: flex-end; gap: 2mm; font-size: 7.5pt; }
+  .lab .line { flex: 1; margin: 0; height: 5mm; }
+  .rules { font-size: 5.8pt; color: var(--muted); line-height: 1.45; margin-top: 2.5mm; }
+  .qr { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 1mm; font-size: 5.5pt; color: var(--muted); text-align: center; }
+  .qr img { width: 18mm; }
+  .cap { font-size: 8pt; color: #444; margin-top: 3mm; }
+</style>
+</head>
+<body>
+<section class="sheet">
+  <h1>Tarjeta Club Brote — 90 × 55 mm</h1>
+  <p class="note">Va dentro de cada paquete. El dorso se completa a mano con los puntos. Imprimir al 100% en cartulina de 300 g, doble faz.</p>
+  <div class="row">
+    <div>
+      <div class="card front cut" data-shot="tarjeta-club-frente">
+        <img src="../../brote/svg/brote-logo-sin-bajada-crema.svg" alt="Brote">
+        <div class="t">Club de puntos</div>
+        <div class="s">Crecen ellos, crecen tus puntos</div>
+      </div>
+      <div class="cap">Frente</div>
+    </div>
+    <div>
+      <div class="card back cut" data-shot="tarjeta-club-dorso">
+        <div>
+          <div class="lab">Nombre <div class="line"></div></div>
+          <div class="lab" style="margin-top:2.2mm">Con esta compra sumaste <div class="line"></div> puntos</div>
+          <div class="lab" style="margin-top:2.2mm">Tu saldo <div class="line"></div> puntos</div>
+          <p class="rules">$1.000 = 1 punto · 100 puntos = $5.000 de descuento.<br>Recomendá a una amiga: +100 puntos cuando compre.<br>Los puntos duran 12 meses.</p>
+        </div>
+        <div class="qr"><img src="../../etiquetas/qr-instagram.svg" alt="QR a Instagram de Brote">@brote.bebe</div>
+      </div>
+      <div class="cap">Dorso (se completa a mano)</div>
+    </div>
+  </div>
+</section>
+</body>
+</html>
